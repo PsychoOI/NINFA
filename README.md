@@ -1,31 +1,45 @@
 # UKT - Neurofeedback
 
-Matlab Framework for running Custom Neurofeedback Protocols on LSL Streams
+Small Matlab Framework for running Custom Neurofeedback Protocols on LSL Streams
 
 ## Requirements
 
 * Windows 10/11
 * Matlab 2020a
 
-## How-To
+## Starting
 
 1. Open this folder in Matlab
 2. Open and start `main.m` in Matlab
 
-Then:
-1. Adjust `TYPE` of LSL input stream (default is for NIRS device) [Optional]
-2. Click `OPEN` to connect with the LSL stream
+## Configuration
+
+1. [Optional] Adjust `TYPE` of LSL input stream (default is for NIRS device) 
+2. Click `OPEN` to connect with LSL input stream
 3. Configure `SETTINGS`, `ID` and `EPOCHS`
 4. Click `START` to run a session
 
-## Configuration
+![ukt-nf-settings](https://github.com/cyberjunk/ukt-nf/assets/780159/0690b24e-7a20-4357-bd0d-9171c880115d)
 
-### Settings
+### LSL STREAM
+
+| Setting       | Description                                                  |
+|---------------|--------------------------------------------------------------|
+| `TYPE`        | LSL `type` of input stream to open. This is device specific. |
+| `CHANNELS`    | Number of channels found in LSL stream                       | 
+| `SAMPLE RATE` | Measured Samplerate / Reported Samplerate by Device          |
+
+> [!IMPORTANT]  
+> The measured samplerate should (almost) equal the reported samplerate.</br>
+> Otherwise this turns from green to red and you're likely suffering </br>
+> from packet loss (e.g. due to bad or overloaded wifi).
+
+### SETTINGS
 
 | Setting              | Description                                                                                    |
 |----------------------|------------------------------------------------------------------------------------------------|
 | `SELECTED CHANNELS`  | Comma separated list of LSL input channel numbers to use (others are ignored).                 |
-| `WINDOW SIZE (S)`    | Size of the sliding window in seconds. The window always contains this last n seconds of data. |
+| `WINDOW SIZE (S)`    | Size of the sliding window in seconds. The window always contains last n seconds of samples.   |
 | `SESSION LENGTH (S)` | The session will automatically stop after this time.                                           |
 | `PROTOCOL`           | The Matlab file from folder `protocols` with algorithm executed on each window.                |
 
@@ -37,11 +51,11 @@ Then:
 | `SUBJECT`  | Number of Subject  |
 | `RUN`      | Number of Run      |
 
-The session will be automatically saved in subfolder `sessions` with name `STUDYNAME-SUBJECTNUM-RUNNUM.mat`
+The session will be automatically saved in subfolder `sessions` with name `STUDY-SUBJECT-RUN.mat`
 
-### Epochs
+### EPOCHS
 
-An epoch is a special timespan within a session.
+An epoch is a configurable timespan within a session.
 
 | Setting     | Description                                            |
 |-------------|--------------------------------------------------------|
@@ -53,7 +67,7 @@ An epoch is a special timespan within a session.
 
 * Add epoch by clicking `+`
 * Remove last or selected epoch(s) by clicking `-`
-* Chose color of selected epoch(s) by clicking `COLOR`
+* Chose background color of selected epoch(s) by clicking `COLOR`
 
 ## LSL Output
 
@@ -72,10 +86,18 @@ An epoch is a special timespan within a session.
 
 ## Protocols
 
-* A protocol calculates a feedback value from a window
+* A protocol calculates a feedback value from an input window
 * To add a protocol put the Matlab file in subfolder `protocols`
 * See `example1.m` (returns a random feedback value)
 
 ## Drift and Execution Times
 
-TODO
+* `DRIFT` shows current offset in playback schedule (`where we are` vs. `where we should be`)
+* It typically occurs if the average runtime of your protocol is larger than `1s/samplerate`
+* If your protocol requires more time then skip some windows and repeat the previous feedback for them (see `example1.m`)
+
+## Feedback Window
+
+Shows a centered bar with feedback values `<= 0.5` visualized in blue and values `> 0.5` visualized in red.
+
+![ukt-nf-feedback](https://github.com/cyberjunk/ukt-nf/assets/780159/05b6cb15-8979-4106-8c4d-77c790c9f4a8)
