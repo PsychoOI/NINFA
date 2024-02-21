@@ -1,0 +1,11 @@
+# Use CRLF line endings on all test files
+* text eol=crlf
+
+# Matlab Binary Files
+*.mlapp  binary
+*.mat    binary
+*.mexw64 binary
+
+# Other Binary Files
+*.dll binary
+*.lib binary
