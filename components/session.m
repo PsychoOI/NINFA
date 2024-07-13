@@ -15,6 +15,7 @@ classdef session < handle
         protocolsum double  = 0.0;        % sum tracked protocol exec time
         srate       double  = 0.0;        % sample rate
         channels    uint32  = [];         % channel numbers
+        SizeCHSS    uint32  = [];         % SS channel numbers
         data        double  = zeros(0,0); % session data
         times       double  = zeros(0);   % timestamps of sesssion data
         idx         uint32  = 0;          % current index in data and times
@@ -45,7 +46,7 @@ classdef session < handle
     methods
         %% Start a new session
         function r = start(self, protocol, lengthmax, window, srate, ...
-                           channels, markerinfo, study, subject, run)
+                           channels, SizeCHSS, markerinfo, study, subject, run)
             if self.running
                 r = false;
                 return;
@@ -54,7 +55,7 @@ classdef session < handle
                 close(self.ploth);
             end
             numrows = ceil(srate*lengthmax);
-            numcols = length(channels);
+            numcols = size(channels,2); %length(channels);
             numrowswnd = ceil(srate*window);
             self.running = true;
             self.protocol = protocol;
@@ -64,6 +65,7 @@ classdef session < handle
             self.lengthmax = lengthmax;          
             self.srate = srate;
             self.channels = channels;
+            self.SizeCHSS = SizeCHSS;
             self.data = zeros(numrows, numcols);
             self.times = zeros(numrows, 1);
             self.feedback = zeros(numrows, 1);
@@ -169,6 +171,7 @@ classdef session < handle
             end
             self.window(self.windowidx,:) = sample;
             self.windowtimes(self.windowidx,:) = relts;
+            
             %% raise window event
             notify(self, "Window");
             if self.windowidx >= length(self.window)
@@ -201,6 +204,7 @@ classdef session < handle
             export.protocol = self.protocol;
             export.samplerate = self.srate;
             export.channels = self.channels;
+            export.SizeCHSS = self.SizeCHSS;
             export.starttime = datetime(self.starttime,'ConvertFrom','datenum');
             export.stoptime = datetime(self.stoptime,'ConvertFrom','datenum');
             export.duration = self.length;
@@ -223,18 +227,53 @@ classdef session < handle
         function plot(self)
             self.ploth = figure('Name', 'Session Plot');
             self.ploth.NumberTitle = 'off';
-            nchannels = length(self.channels);
-            for i = (1:nchannels)
-                subplot(nchannels+2,1,i);
-                plot(self.data(:,i));
-                title('Channel ' + string(self.channels(i)));
-            end
-            subplot(nchannels+2,1,nchannels+1);
+            nchannels = size(self.channels, 2)/4; % total number of channels (NF+Correction) 
+            disp(nchannels)
+            nchannels_NF = nchannels - self.SizeCHSS; % only Feedback channels
+
+            % Choice 1: Plotting Channel Signal
+%             iW2 = 1;
+%             for i = 1:nchannels
+%                 subplot(nchannels+2,1,i);   
+%                 plot(self.data(:,nchannels*2+i),'r'); % HbO
+%                 hold on 
+%                 plot(self.data(:,nchannels*3+i),'b'); % HbR
+%                 title('Concentration Changes [uM]: Channel ' + string(self.channels(iW2)-1));
+%                 iW2 = iW2 + 1;
+%             end
+%             % Plotting Feedback values
+%             subplot(nchannels+2,1,nchannels+1);
+%             plot(self.feedback(:,1));
+%             title('Feedback');
+%             % Plotting Marker Values
+%             subplot(nchannels+2,1,nchannels+2);
+%             plot(self.markers(:,1));
+%             title('Marker');
+
+            % Choice 2: Plotting Channel Average
+            NF = mean(self.data(:,2*nchannels+1:2*nchannels+nchannels_NF),2); % average of NF channels HbO
+            CC = mean(self.data(:,2*nchannels+nchannels_NF+1:3*nchannels),2); % average of channels for correction HbO
+            NF_HbR = mean(self.data(:,3*nchannels+1:3*nchannels+nchannels_NF),2); % average of NF channels HbR
+            CC_HbR = mean(self.data(:,3*nchannels+nchannels_NF+1:4*nchannels),2); % average of channels for correction HbR
+            subplot(4,1,1);   
+            plot(NF,'r'); % HbO
+            hold on 
+            plot(NF_HbR,'b'); % HbR           
+            title('Concentration Changes [uM]: Average of Neurofeedback Channels ');
+            subplot(4,1,2);   
+            plot(CC,'r'); % HbO
+            hold on 
+            plot(CC_HbR,'b'); % HbR           
+            title('Concentration Changes [uM]: Average of Channels for correction');            
+            % Plotting Feedback values
+            subplot(4,1,3);
             plot(self.feedback(:,1));
             title('Feedback');
-            subplot(nchannels+2,1,nchannels+2);
+            % Plotting Marker Values
+            subplot(4,1,4);
             plot(self.markers(:,1));
             title('Marker');
+            
         end
     end
 end
