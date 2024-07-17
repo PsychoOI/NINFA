@@ -1,4 +1,18 @@
-function r = Gauss(...
+function fh = Gauss
+  fh.init = @init;
+  fh.process = @process;
+end
+
+% EXECUTED ONCE ON START
+function init()
+    global Filter
+    ordine = 15;
+    cutoff = 0.022;
+    Filter = gaussfir(cutoff, ordine);
+end
+
+% EXECUTED FOR EACH RECEIVED LSL PACKET
+function r = process(...
     marker, nChSS, samplerate, samplenum, ~, ...
     windownum, window, isfullwindow, prevfeedback)
 
@@ -13,8 +27,8 @@ function r = Gauss(...
     global CounterRS
     global MarkerPrevious
     global First
-    global Amplitude
-    
+    global Amplitude 
+    global Filter
 
     nChLS = (size(window,2)/4)-nChSS;
 
@@ -54,10 +68,7 @@ function r = Gauss(...
                     %% Performing the amplitude of the signal - 15 seconds before the start of the experiment
                     Rest_long = mean(DataRS(floor(samplerate*15):CounterRS,1:nChLS),2);
                     % 1 - Gaussian filtering 
-                    ordine = 15; % filter order
-                    cutoff = 0.022; % filter cut-off                  
-                    filtro = gaussfir(cutoff, ordine);
-                    Signal_Gauss = conv(Rest_long, filtro, 'same');                    
+                    Signal_Gauss = conv(Rest_long, Filter, 'same');                    
                     % sort data 
                     SortVector = sort( Signal_Gauss);
                     % the amplitude is the difference between the largest and the smallest
@@ -75,12 +86,9 @@ function r = Gauss(...
                 DataFilt = DataRS(floor(samplerate*25):CounterRS,1:nChLS); %prendo solo HbO
                 disp(size(DataFilt))
                 
-                 % Gaussian Filtering
-                ordine = 15; 
-                cutoff = 0.022;            
-                filtro = gaussfir(cutoff, ordine);
+                % Gaussian Filtering
                 for s = 1:size(DataFilt,2) 
-                    DataFiltGs(:,s) = conv(DataFilt(:,s), filtro, 'same'); 
+                    DataFiltGs(:,s) = conv(DataFilt(:,s), Filter, 'same'); 
                 end
                     
                 RestValue(1,1) = mean(mean(DataFiltGs,2));
@@ -110,11 +118,8 @@ function r = Gauss(...
             DataConcHbO = DataConc(:,1:nChLS); % HbO LS channels
             
             % Gaussian Filtering
-            ordine = 15; 
-            cutoff = 0.022;            
-            filtro = gaussfir(cutoff, ordine);
             for s = 1:nChLS
-                DataFilt(:,s) = conv(DataConcHbO(:,s), filtro, 'same'); % 'same' restituisce un output della stessa lunghezza di x
+                DataFilt(:,s) = conv(DataConcHbO(:,s), Filter, 'same'); % 'same' restituisce un output della stessa lunghezza di x
             end
             
 

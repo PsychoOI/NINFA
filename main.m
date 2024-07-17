@@ -28,7 +28,6 @@ mysession  = session();
 mysettings = app();
 myfeedback = feedback();
 
-
 % add listeners to lsl
 lhsample = addlistener(mylsl, "NewSample", @onNewSample);
 
@@ -73,12 +72,15 @@ function onNewSample(src, ~)
     mysession.update();
 end
 
-function onSessionStarted(~, ~)
+function onSessionStarted(src, ~)
     global mylsl;
     global myfeedback;
+    global myprotocol;
     mylsl.marker = 0;
     mylsl.trigger(100);
     myfeedback.showBar();
+    myprotocol = feval(src.protocol);
+    myprotocol.init();
 end
 
 function onSessionStopped(src, ~)
@@ -104,6 +106,7 @@ end
 
 function onSessionWindow(src, ~)
     global myfeedback;
+    global myprotocol;
 
     prevfeedback = 0.5;
     if src.idx > 1
@@ -111,7 +114,7 @@ function onSessionWindow(src, ~)
     end
     
     tick = tic();
-    r = feval (src.protocol, ...
+    r = myprotocol.process (...
         src.marker,    src.SizeCHSS, src.srate, ...
         src.idx,       src.data(src.idx,:), ...
         src.windownum, src.window, ...
