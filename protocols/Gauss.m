@@ -11,7 +11,7 @@ function init()
     Filter = gaussfir(cutoff, ordine);
 end
 
-% EXECUTED FOR EACH RECEIVED LSL PACKET
+% EXECUTED FOR EACH SLIDING WINDOW
 function r = process(...
     marker, nChSS, samplerate, samplenum, ~, ...
     windownum, window, isfullwindow, prevfeedback)
@@ -32,35 +32,35 @@ function r = process(...
 
     nChLS = (size(window,2)/4)-nChSS;
 
-    n    = 1;
-    tick = tic();
-       
+    r    = 0.5;   % default return
+    n    = 1;     % process every n-th window
+    tick = tic(); % start time of execution
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     if marker == 1
         %% waiting phase at the very beginng (first epoch)
-        r = 0.5; % feedback value
-%         disp(nChSS);
         MarkerPrevious = 1;
         First = 0;
 
-    elseif marker == 2   % rest condition
-        if MarkerPrevious ~= 2       
+    elseif marker == 2
+        %% RESTING PHASE
+        if MarkerPrevious ~= 2
            CounterRS = 0;
-           DataRS  = []; 
+           DataRS  = [];
            RestValue = [];
-         end
+        end
         % return 0.5 until first full window
-         if ~isfullwindow
-            r = 0.5;            
+        if ~isfullwindow
+            %r = 0.5;
             % calculate on every n-th window: Real-Time Preprocessing
-        elseif mod(windownum, n) == 0           
-	
+        elseif mod(windownum, n) == 0
+
             DataConc = window(:,(size(window,2)/2)+1:end); % concentration data
             CounterRS = CounterRS + 1;
-		    % saving the value of the last frame   
+            % saving the value of the last frame   
             DataRS(CounterRS,1:nChLS)= DataConc(end,1:nChLS); % only HbO data of long channels
-
             disp(CounterRS)
-            r = 0.5;          
 
             if CounterRS  == floor(samplerate*30)-5 % 5 frames before 30 seconds of rest (to avoid final delays)
                 if First == 0 % only if it is the first Rest
@@ -68,7 +68,7 @@ function r = process(...
                     %% Performing the amplitude of the signal - 15 seconds before the start of the experiment
                     Rest_long = mean(DataRS(floor(samplerate*15):CounterRS,1:nChLS),2);
                     % 1 - Gaussian filtering 
-                    Signal_Gauss = conv(Rest_long, Filter, 'same');                    
+                    Signal_Gauss = conv(Rest_long, Filter, 'same');
                     % sort data 
                     SortVector = sort( Signal_Gauss);
                     % the amplitude is the difference between the largest and the smallest
@@ -94,22 +94,19 @@ function r = process(...
                 RestValue(1,1) = mean(mean(DataFiltGs,2));
                 
                 disp(RestValue)
-   
-                r = 0.5; 
-                
             end
-        MarkerPrevious = marker;
-        
+            MarkerPrevious = marker;
         else
             MarkerPrevious = marker;
             r = prevfeedback;
         end
         
-    else
-         MarkerPrevious = marker;
+    elseif marker == 3
+        %% MAIN PHASE
+        MarkerPrevious = marker;
         % return 0.5 until first full window
         if ~isfullwindow
-            r = 0.5;            
+            %r = 0.5;            
             % calculate on every n-th window: Real-Time Preprocessing
         elseif mod(windownum, n) == 0           
             
@@ -122,7 +119,6 @@ function r = process(...
                 DataFilt(:,s) = conv(DataConcHbO(:,s), Filter, 'same'); % 'same' restituisce un output della stessa lunghezza di x
             end
             
-
             saveY = mean(mean(DataFilt,1));
 
             %% Feedback
@@ -133,17 +129,24 @@ function r = process(...
              % y= ( ((X-a)x(d-c)) / (b-a) )  + c 
                 % ( a , b ) = initial interval --> (-0.4, 0.4) 
                 % ( c , d ) = final interval --> (0 , 1) 
-           
+            
             disp(saveY)
             
-            r = feedback_N;            
-             
-            % skip this sample/window
+            r = feedback_N;
+            
+        % skip this sample/window
         else
             r = prevfeedback;
         end
 
+    else
+        %% UNKNOWN PHASE
+        r = prevfeedback;
+        warning("UNKNOWN EPOCH MARKER: " + marker)
     end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     % time spent
     span = toc(tick);
     
