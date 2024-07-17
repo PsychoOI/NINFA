@@ -86,6 +86,7 @@ classdef session < handle
             self.starttime = now();
             r = true;
             notify(self, "Started");
+            self.update()
         end
         
         %% Stop a running session
