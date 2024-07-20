@@ -19,12 +19,14 @@ clear            % clear workspace
 % globals
 global mylsl;
 global mysession;
+global mydevices;
 global mysettings;
 global myfeedback;
 
 % init globals
 mylsl      = lsl();
 mysession  = session();
+mydevices  = devices();
 mysettings = app();
 myfeedback = feedback();
 
