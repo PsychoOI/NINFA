@@ -61,6 +61,12 @@ classdef app_exported < matlab.apps.AppBase
         PROTOCOLMaxDescLabel            matlab.ui.control.Label
         PROTOCOLAvgLabel                matlab.ui.control.Label
         PROTOCOLAvgDescLabel            matlab.ui.control.Label
+        DEVICEPanel                     matlab.ui.container.Panel
+        GridLayout6                     matlab.ui.container.GridLayout
+        MODELDropDownLabel              matlab.ui.control.Label
+        DEVICEDropDown                  matlab.ui.control.DropDown
+        TYPEDropDownLabel               matlab.ui.control.Label
+        TYPEDropDown                    matlab.ui.control.DropDown
     end
 
     
@@ -169,7 +175,7 @@ classdef app_exported < matlab.apps.AppBase
                 app.PROTOCOLAvgLabel.BackgroundColor = 'green';
             end
         end
-        
+
         function update(app)
             global mylsl
             global mysession
@@ -193,6 +199,27 @@ classdef app_exported < matlab.apps.AppBase
                 app.updateStatus();
             end
         end
+        
+        function updateDevices(app)
+            global mydevices;
+            app.DEVICEDropDown.Items = {};
+            type = lower(app.TYPEDropDown.Value);
+            for idx = 1:length(mydevices.(type))
+                app.DEVICEDropDown.Items(idx) = ...
+                    cellstr(mydevices.(type)(idx).name);
+            end
+        end
+        
+        function useDevice(app)
+            global mydevices;
+            type = convertCharsToStrings(app.TYPEDropDown.Value);
+            name = convertCharsToStrings(app.DEVICEDropDown.Value);
+            if mydevices.select(type, name)
+                disp("SELECTED DEVICE: " + mydevices.selected.name + ...
+                    "(" + mydevices.selected.type + ")");
+            end
+        end
+        
     end
     
 
@@ -205,6 +232,11 @@ classdef app_exported < matlab.apps.AppBase
             app.UIFigure.Name = "Settings";
             addlistener(mysession, "Started", @app.onSessionStarted);
             addlistener(mysession, "Stopped", @app.onSessionStopped);
+            for idx = 1:length(devices.types)
+                app.TYPEDropDown.Items(idx) = cellstr(devices.types(idx));
+            end
+            app.updateDevices();
+            app.useDevice();
             app.PROTOCOLDropDown.Items = string(ls("protocols/*.m"));
             app.MARKERTable.SelectionType = 'row';
             app.MARKERTable.ColumnFormat = { 
@@ -477,6 +509,17 @@ classdef app_exported < matlab.apps.AppBase
             end
             app.CHANNELSFORCORRECTIONEditField.Value = newvalue;
         end
+
+        % Value changed function: DEVICEDropDown
+        function DEVICEDropDownValueChanged(app, event)
+            app.useDevice();
+        end
+
+        % Value changed function: TYPEDropDown
+        function TYPEDropDownValueChanged(app, event)
+            app.updateDevices();
+            app.useDevice();
+        end
     end
 
     % Component initialization
@@ -488,7 +531,7 @@ classdef app_exported < matlab.apps.AppBase
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
             app.UIFigure.AutoResizeChildren = 'off';
-            app.UIFigure.Position = [100 100 653 680];
+            app.UIFigure.Position = [100 100 657 832];
             app.UIFigure.Name = 'MATLAB App';
             app.UIFigure.Resize = 'off';
 
@@ -510,7 +553,7 @@ classdef app_exported < matlab.apps.AppBase
             app.LSLSTREAMPanel = uipanel(app.UIFigure);
             app.LSLSTREAMPanel.AutoResizeChildren = 'off';
             app.LSLSTREAMPanel.Title = 'LSL STREAM';
-            app.LSLSTREAMPanel.Position = [16 510 625 156];
+            app.LSLSTREAMPanel.Position = [22 601 623 118];
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.LSLSTREAMPanel);
@@ -567,11 +610,11 @@ classdef app_exported < matlab.apps.AppBase
             app.SETTINGSPanel = uipanel(app.UIFigure);
             app.SETTINGSPanel.AutoResizeChildren = 'off';
             app.SETTINGSPanel.Title = 'SETTINGS';
-            app.SETTINGSPanel.Position = [16 340 375 157];
+            app.SETTINGSPanel.Position = [21 383 375 205];
 
             % Create GridLayout2
             app.GridLayout2 = uigridlayout(app.SETTINGSPanel);
-            app.GridLayout2.RowHeight = {'1x', '1x', '1x', '1x', '1x'};
+            app.GridLayout2.RowHeight = {'1x', '1x', '1x', '1x', '1x', '1x'};
 
             % Create NEUROFEEDBACKCHANNELSEditFieldLabel
             app.NEUROFEEDBACKCHANNELSEditFieldLabel = uilabel(app.GridLayout2);
@@ -663,14 +706,14 @@ classdef app_exported < matlab.apps.AppBase
             app.STARTButton.ButtonPushedFcn = createCallbackFcn(app, @STARTButtonPushed, true);
             app.STARTButton.Enable = 'off';
             app.STARTButton.Tooltip = {'Start or stop session'};
-            app.STARTButton.Position = [17 13 622 22];
+            app.STARTButton.Position = [18 19 622 22];
             app.STARTButton.Text = 'START';
 
             % Create SESSIONINFOPanel
             app.SESSIONINFOPanel = uipanel(app.UIFigure);
             app.SESSIONINFOPanel.AutoResizeChildren = 'off';
             app.SESSIONINFOPanel.Title = 'SESSION INFO';
-            app.SESSIONINFOPanel.Position = [17 40 473 115];
+            app.SESSIONINFOPanel.Position = [18 60 473 115];
 
             % Create GridLayout3
             app.GridLayout3 = uigridlayout(app.SESSIONINFOPanel);
@@ -762,7 +805,7 @@ classdef app_exported < matlab.apps.AppBase
             app.EPOCHSPanel = uipanel(app.UIFigure);
             app.EPOCHSPanel.AutoResizeChildren = 'off';
             app.EPOCHSPanel.Title = 'EPOCHS';
-            app.EPOCHSPanel.Position = [16 170 625 157];
+            app.EPOCHSPanel.Position = [20 188 625 185];
 
             % Create MARKERTable
             app.MARKERTable = uitable(app.EPOCHSPanel);
@@ -773,14 +816,14 @@ classdef app_exported < matlab.apps.AppBase
             app.MARKERTable.CellEditCallback = createCallbackFcn(app, @MARKERTableCellEdit, true);
             app.MARKERTable.Tooltip = {'Define markers (a value between 1 and 99) for epochs here. An epoch is defined by its start and end time. A trigger will be sent at the beginning of each epoch.'};
             app.MARKERTable.Enable = 'off';
-            app.MARKERTable.Position = [11 8 494 120];
+            app.MARKERTable.Position = [11 36 494 120];
 
             % Create MARKERAddButton
             app.MARKERAddButton = uibutton(app.EPOCHSPanel, 'push');
             app.MARKERAddButton.ButtonPushedFcn = createCallbackFcn(app, @MARKERAddButtonPushed, true);
             app.MARKERAddButton.Enable = 'off';
             app.MARKERAddButton.Tooltip = {'Add an epoch'};
-            app.MARKERAddButton.Position = [513 94 100 34];
+            app.MARKERAddButton.Position = [513 122 100 34];
             app.MARKERAddButton.Text = '+';
 
             % Create MARKERDelButton
@@ -788,7 +831,7 @@ classdef app_exported < matlab.apps.AppBase
             app.MARKERDelButton.ButtonPushedFcn = createCallbackFcn(app, @MARKERDelButtonPushed, true);
             app.MARKERDelButton.Enable = 'off';
             app.MARKERDelButton.Tooltip = {'Remove last or selected epochs'};
-            app.MARKERDelButton.Position = [513 51 100 34];
+            app.MARKERDelButton.Position = [513 79 100 34];
             app.MARKERDelButton.Text = '-';
 
             % Create COLORButton
@@ -796,14 +839,14 @@ classdef app_exported < matlab.apps.AppBase
             app.COLORButton.ButtonPushedFcn = createCallbackFcn(app, @COLORButtonPushed, true);
             app.COLORButton.Enable = 'off';
             app.COLORButton.Tooltip = {'Select color for selected epochs'};
-            app.COLORButton.Position = [513 8 100 34];
+            app.COLORButton.Position = [513 36 100 34];
             app.COLORButton.Text = 'COLOR';
 
             % Create IDPanel
             app.IDPanel = uipanel(app.UIFigure);
             app.IDPanel.AutoResizeChildren = 'off';
             app.IDPanel.Title = 'ID';
-            app.IDPanel.Position = [400 340 241 157];
+            app.IDPanel.Position = [401 383 244 205];
 
             % Create GridLayout4
             app.GridLayout4 = uigridlayout(app.IDPanel);
@@ -858,7 +901,7 @@ classdef app_exported < matlab.apps.AppBase
             app.PROTOCOLTIMEPanel = uipanel(app.UIFigure);
             app.PROTOCOLTIMEPanel.AutoResizeChildren = 'off';
             app.PROTOCOLTIMEPanel.Title = 'PROTOCOL TIME';
-            app.PROTOCOLTIMEPanel.Position = [500 41 141 115];
+            app.PROTOCOLTIMEPanel.Position = [499 60 146 115];
 
             % Create GridLayout5
             app.GridLayout5 = uigridlayout(app.PROTOCOLTIMEPanel);
@@ -891,6 +934,46 @@ classdef app_exported < matlab.apps.AppBase
             app.PROTOCOLAvgDescLabel.Layout.Row = 2;
             app.PROTOCOLAvgDescLabel.Layout.Column = 1;
             app.PROTOCOLAvgDescLabel.Text = 'AVG:';
+
+            % Create DEVICEPanel
+            app.DEVICEPanel = uipanel(app.UIFigure);
+            app.DEVICEPanel.AutoResizeChildren = 'off';
+            app.DEVICEPanel.Title = 'DEVICE';
+            app.DEVICEPanel.Position = [19 733 626 88];
+
+            % Create GridLayout6
+            app.GridLayout6 = uigridlayout(app.DEVICEPanel);
+            app.GridLayout6.ColumnWidth = {'1.5x', '2x', '1x'};
+
+            % Create MODELDropDownLabel
+            app.MODELDropDownLabel = uilabel(app.GridLayout6);
+            app.MODELDropDownLabel.HorizontalAlignment = 'center';
+            app.MODELDropDownLabel.Layout.Row = 2;
+            app.MODELDropDownLabel.Layout.Column = 1;
+            app.MODELDropDownLabel.Text = 'MODEL';
+
+            % Create DEVICEDropDown
+            app.DEVICEDropDown = uidropdown(app.GridLayout6);
+            app.DEVICEDropDown.Items = {};
+            app.DEVICEDropDown.ValueChangedFcn = createCallbackFcn(app, @DEVICEDropDownValueChanged, true);
+            app.DEVICEDropDown.Layout.Row = 2;
+            app.DEVICEDropDown.Layout.Column = 2;
+            app.DEVICEDropDown.Value = {};
+
+            % Create TYPEDropDownLabel
+            app.TYPEDropDownLabel = uilabel(app.GridLayout6);
+            app.TYPEDropDownLabel.HorizontalAlignment = 'center';
+            app.TYPEDropDownLabel.Layout.Row = 1;
+            app.TYPEDropDownLabel.Layout.Column = 1;
+            app.TYPEDropDownLabel.Text = 'TYPE';
+
+            % Create TYPEDropDown
+            app.TYPEDropDown = uidropdown(app.GridLayout6);
+            app.TYPEDropDown.Items = {'NIRS', 'EEG', 'HRV', 'GSR'};
+            app.TYPEDropDown.ValueChangedFcn = createCallbackFcn(app, @TYPEDropDownValueChanged, true);
+            app.TYPEDropDown.Layout.Row = 1;
+            app.TYPEDropDown.Layout.Column = 2;
+            app.TYPEDropDown.Value = 'NIRS';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
