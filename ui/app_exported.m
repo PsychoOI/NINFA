@@ -217,7 +217,6 @@ classdef app_exported < matlab.apps.AppBase
             if mydevices.select(type, name)
                 disp("SELECTED DEVICE: " + mydevices.selected.name + ...
                     "(" + mydevices.selected.type + ")");
-                
                 app.TYPEEditField.Value = mydevices.selected.lsl.type;
             end
         end
@@ -577,7 +576,6 @@ classdef app_exported < matlab.apps.AppBase
             app.TYPEEditField = uieditfield(app.GridLayout, 'text');
             app.TYPEEditField.Layout.Row = 1;
             app.TYPEEditField.Layout.Column = 2;
-            app.TYPEEditField.Value = 'NIRS';
 
             % Create OPENButton
             app.OPENButton = uibutton(app.GridLayout, 'push');
@@ -975,11 +973,11 @@ classdef app_exported < matlab.apps.AppBase
 
             % Create TYPEDropDown
             app.TYPEDropDown = uidropdown(app.GridLayout6);
-            app.TYPEDropDown.Items = {'NIRS', 'EEG', 'HRV', 'GSR'};
+            app.TYPEDropDown.Items = {};
             app.TYPEDropDown.ValueChangedFcn = createCallbackFcn(app, @TYPEDropDownValueChanged, true);
             app.TYPEDropDown.Layout.Row = 1;
             app.TYPEDropDown.Layout.Column = 2;
-            app.TYPEDropDown.Value = 'NIRS';
+            app.TYPEDropDown.Value = {};
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
