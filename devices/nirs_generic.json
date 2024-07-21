@@ -1,4 +1,8 @@
 {
   "name": "Generic",
-  "type": "NIRS"
+  "type": "NIRS",
+  "lsl": {
+    "type": "",
+	"channels": []
+  }
 }

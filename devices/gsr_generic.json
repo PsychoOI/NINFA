@@ -1,4 +1,8 @@
 {
   "name": "Generic",
-  "type": "GSR"
+  "type": "GSR",
+  "lsl": {
+    "type": "",
+	"channels": []
+  }
 }
