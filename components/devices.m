@@ -29,18 +29,22 @@ classdef devices < handle
                         idx = length(self.nirs) + 1;
                         self.nirs(idx).name = json.name;
                         self.nirs(idx).type = json.type;
+                        self.nirs(idx).lsl = json.lsl;
                     case "EEG"
                         idx = length(self.eeg) + 1;
                         self.eeg(idx).name = json.name;
                         self.eeg(idx).type = json.type;
+                        self.eeg(idx).lsl = json.lsl;
                     case "HRV"
                         idx = length(self.hrv) + 1;
                         self.hrv(idx).name = json.name;
                         self.hrv(idx).type = json.type;
+                        self.hrv(idx).lsl = json.lsl;
                     case "GSR"
                         idx = length(self.gsr) + 1;
                         self.gsr(idx).name = json.name;
                         self.gsr(idx).type = json.type;
+                        self.gsr(idx).lsl = json.lsl;
                     otherwise
                         disp("Ignoring unknown device type");
                 end
