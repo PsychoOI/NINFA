@@ -20,15 +20,17 @@ clear            % clear workspace
 global mylsl;
 global mysession;
 global mydevices;
+global myprotocols;
 global mysettings;
 global myfeedback;
 
 % init globals
-mylsl      = lsl();
-mysession  = session();
-mydevices  = devices();
-mysettings = app();
-myfeedback = feedback();
+mylsl       = lsl();
+mysession   = session();
+mydevices   = devices();
+myprotocols = protocols();
+mysettings  = app();
+myfeedback  = feedback();
 
 % add listeners to lsl
 lhsample = addlistener(mylsl, "NewSample", @onNewSample);

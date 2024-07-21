@@ -212,12 +212,19 @@ classdef app_exported < matlab.apps.AppBase
         
         function useDevice(app)
             global mydevices;
+            global myprotocols;
             type = convertCharsToStrings(app.TYPEDropDown.Value);
             name = convertCharsToStrings(app.DEVICEDropDown.Value);
             if mydevices.select(type, name)
                 disp("SELECTED DEVICE: " + mydevices.selected.name + ...
                     "(" + mydevices.selected.type + ")");
                 app.TYPEEditField.Value = mydevices.selected.lsl.type;
+                myprotocols.reload(mydevices.selected);
+                app.PROTOCOLDropDown.Items = {};
+                for idx = 1:length(myprotocols.list)
+                    app.PROTOCOLDropDown.Items(idx) = ...
+                        cellstr(myprotocols.list(idx).name);
+                end
             end
         end
         
@@ -238,7 +245,6 @@ classdef app_exported < matlab.apps.AppBase
             end
             app.updateDevices();
             app.useDevice();
-            app.PROTOCOLDropDown.Items = string(ls("protocols/*.m"));
             app.MARKERTable.SelectionType = 'row';
             app.MARKERTable.ColumnFormat = { 
                 'short', 'short', 'short', 'logical', 'short', 'short', 'short' };

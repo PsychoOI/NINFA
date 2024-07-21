@@ -1,6 +1,15 @@
 function fh = Gauss
-  fh.init = @init;
-  fh.process = @process;
+  fh.requires = @requires;
+  fh.init     = @init;
+  fh.process  = @process;
+end
+
+% REQUIREMENTS FOR PROTOCOL
+function r = requires()
+    r.devicetype = "NIRS";
+    r.markers = [1, 2, 3];
+    r.channels(1) = struct("type", "HbO", "mode", "long",  "min", 1, "max", 0);
+    r.channels(2) = struct("type", "HbO", "mode", "short", "min", 1, "max", 0);
 end
 
 % EXECUTED ONCE ON START
