@@ -26,6 +26,8 @@ classdef selectchannels < handle
         hRequired      matlab.ui.control.Table;
         hChannels      matlab.ui.control.Table;
         hButton        matlab.ui.control.Button;
+        hStyleOk;
+        hStyleNotOk;   
     end
     
     events
@@ -121,9 +123,20 @@ classdef selectchannels < handle
                 selectchannels.panelwidth, ...
                 selectchannels.buttonheight];
             
+            % init ok style
+            self.hStyleOk = uistyle();
+            self.hStyleOk.BackgroundColor = 'green';
+            self.hStyleOk.HorizontalAlignment = 'center';
+            
+            % init notok style
+            self.hStyleNotOk = uistyle();
+            self.hStyleNotOk.BackgroundColor = 'red';
+            self.hStyleNotOk.HorizontalAlignment = 'center';
+            
             % init tables data
             self.initRequired();
             self.initSelected();
+            self.updateOK();
             
             % show
             self.hFig.Visible = 'on';
@@ -143,32 +156,69 @@ classdef selectchannels < handle
                 ];
             end
         end
-        
+
         function initSelected(self)
             global mylsl;
             global mydevices;
+            tblidx = 1;
+            lenreqs = size(self.hRequired.Data, 1);
             self.hChannels.Data = strings([0,5]);
             for idx = 1:mylsl.lslchannels
-                if idx <= size(mydevices.selected.lsl.channels, 1)
-                    self.hChannels.Data(idx,:) = [
+                if idx <= size(mydevices.selected.lsl.channels, 1) && ...
+                   self.isShowChannel(mydevices.selected.lsl.channels(idx))
+                    self.hChannels.Data(tblidx,:) = [
                         "false", ...
                         idx, ...
                         mydevices.selected.lsl.channels(idx).devch, ...
                         mydevices.selected.lsl.channels(idx).type, ...
                         mydevices.selected.lsl.channels(idx).unit
                     ];
-                else
-                    self.hChannels.Data(idx,:) = [
+                    tblidx = tblidx + 1;
+                elseif lenreqs == 0
+                    self.hChannels.Data(tblidx,:) = [
                         "false", ...
                         idx, ...
                         "", ...
                         "", ...
                         ""
                     ];
+                    tblidx = tblidx + 1;
                 end
             end
         end
-
+        
+        function r = isShowChannel(self, channel)
+            lenreqs = size(self.hRequired.Data, 1);
+            if lenreqs == 0
+                r = true;
+                return
+            end
+            for idx = 1:lenreqs
+                if self.hRequired.Data(idx, 4) == channel.type && ...
+                   self.hRequired.Data(idx, 5) == channel.unit
+                    r = true;
+                    return;
+                end
+            end
+            r = false;
+        end
+        
+        function updateOK(self)
+            isok = true;
+            for idx = 1:size(self.hRequired.Data, 1)
+                min = self.hRequired.Data(idx, 1);
+                max = self.hRequired.Data(idx, 2);
+                sel = self.hRequired.Data(idx, 3);
+                if sel < min || sel > max
+                   isok = false;
+                   addStyle(self.hRequired, self.hStyleNotOk, 'cell', [idx 3]);
+                else
+                   addStyle(self.hRequired, self.hStyleOk, 'cell', [idx 3]);
+                end
+            end
+            self.hButton.Enable = isok;
+        end
+        
         function onSelectedChanged(self, ~, ~)
             for idxreq = 1:size(self.hRequired.Data, 1)
                 typereq = self.hRequired.Data(idxreq, 4);
@@ -182,6 +232,7 @@ classdef selectchannels < handle
                 end
                 self.hRequired.Data(idxreq, 3) = slctreq;
             end
+            self.updateOK();
         end
         
         function onButtonClicked(self, ~, ~)
