@@ -8,8 +8,16 @@ end
 function r = requires()
     r.devicetype = "NIRS";
     r.markers = [1, 2, 3];
-    r.channels(1) = struct("type", "HbO", "mode", "long",  "min", 1, "max", 0);
-    r.channels(2) = struct("type", "HbO", "mode", "short", "min", 1, "max", 0);
+    % requires at least one HbO channel
+    r.channels(1).type = "HbO";
+    r.channels(1).unit = "μmol/L";
+    r.channels(1).min = 1;
+    r.channels(1).max = 64;
+    % HbR is optional
+    %r.channels(2).type = "HbR";
+    %r.channels(2).unit = "μmol/L";
+    %r.channels(2).min = 0;
+    %r.channels(2).max = 64;
 end
 
 % EXECUTED ONCE ON START

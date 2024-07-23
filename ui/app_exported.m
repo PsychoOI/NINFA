@@ -27,6 +27,7 @@ classdef app_exported < matlab.apps.AppBase
         PROTOCOLDropDown                matlab.ui.control.DropDown
         CHANNELSFORCORRECTIONEditFieldLabel  matlab.ui.control.Label
         CHANNELSFORCORRECTIONEditField  matlab.ui.control.EditField
+        CHANNELSButton                  matlab.ui.control.Button
         STARTButton                     matlab.ui.control.Button
         SESSIONINFOPanel                matlab.ui.container.Panel
         GridLayout3                     matlab.ui.container.GridLayout
@@ -225,9 +226,17 @@ classdef app_exported < matlab.apps.AppBase
                     app.PROTOCOLDropDown.Items(idx) = ...
                         cellstr(myprotocols.list(idx).name);
                 end
+                app.useProtocol();
             end
         end
         
+        function useProtocol(app)
+            global myprotocols;
+            name = convertCharsToStrings(app.PROTOCOLDropDown.Value);
+            if myprotocols.select(name)
+                disp("SELECTED PROTOCOL: " + myprotocols.selected.name)
+            end      
+        end
     end
     
 
@@ -261,7 +270,7 @@ classdef app_exported < matlab.apps.AppBase
                     app.TYPEDropDown.Enable = false;
                     app.DEVICEDropDown.Enable = false;
                     app.TYPEEditField.Enable = false;
-                    app.CHANNELSFOUNDLabel.Text = int2str((mylsl.lslchannels-1)/4);
+                    app.CHANNELSFOUNDLabel.Text = int2str(mylsl.lslchannels);
                     app.NEUROFEEDBACKCHANNELSEditField.Enable = true;
                     app.CHANNELSFORCORRECTIONEditField.Enable = true;
                     app.WINDOWSIZESEditField.Enable = true;
@@ -408,6 +417,19 @@ classdef app_exported < matlab.apps.AppBase
                 return;
             end
             settings = load(filepath);           
+            if isfield(settings, 'devicetype')
+                app.TYPEDropDown.Value = settings.devicetype;
+                app.updateDevices();
+            end
+            if isfield(settings, 'devicename')
+                if any(strcmp(app.DEVICEDropDown.Items, settings.devicename))
+                    app.DEVICEDropDown.Value = settings.devicename;
+                    app.useDevice();
+                else
+                    msgbox("Device '" + settings.devicename + ...
+                    "' was not found on this computer", "Warning", "warn");
+                end
+            end
             if isfield(settings, 'lsltype')
                 app.TYPEEditField.Value = settings.lsltype;
             end
@@ -426,6 +448,7 @@ classdef app_exported < matlab.apps.AppBase
             if isfield(settings, 'protocol')
                 if any(strcmp(app.PROTOCOLDropDown.Items, settings.protocol))
                     app.PROTOCOLDropDown.Value = settings.protocol;
+                    app.useProtocol();
                 else
                     msgbox("Protocol '" + settings.protocol + ...
                     "' was not found on this computer", "Warning", "warn");
@@ -451,12 +474,15 @@ classdef app_exported < matlab.apps.AppBase
 
         % Menu selected function: SaveMenu
         function SaveMenuSelected(app, event)
+            global mydevices;
             [file, path] = uiputfile("./settings/*.mat");
             figure(app.UIFigure); % focus back
             if isequal(file,0) || isequal(path,0)
                 return;
             end
             filepath = string(path) + string(file);
+            settings.devicetype = mydevices.selected.type;
+            settings.devicename = mydevices.selected.name;
             settings.lsltype = app.TYPEEditField.Value;
             settings.channelsLS = app.NEUROFEEDBACKCHANNELSEditField.Value;
             settings.channelsSS = app.CHANNELSFORCORRECTIONEditField.Value;
@@ -530,6 +556,19 @@ classdef app_exported < matlab.apps.AppBase
         function TYPEDropDownValueChanged(app, event)
             app.updateDevices();
             app.useDevice();
+        end
+
+        % Button pushed function: CHANNELSButton
+        function CHANNELSButtonPushed(app, event)
+            global myselectchannels;
+            myselectchannels.show();
+            %myselectchannels.initRequired();
+            %myselectchannels.initSelected();
+        end
+
+        % Value changed function: PROTOCOLDropDown
+        function PROTOCOLDropDownValueChanged(app, event)
+            app.useProtocol();
         end
     end
 
@@ -688,6 +727,7 @@ classdef app_exported < matlab.apps.AppBase
             % Create PROTOCOLDropDown
             app.PROTOCOLDropDown = uidropdown(app.GridLayout2);
             app.PROTOCOLDropDown.Items = {};
+            app.PROTOCOLDropDown.ValueChangedFcn = createCallbackFcn(app, @PROTOCOLDropDownValueChanged, true);
             app.PROTOCOLDropDown.Enable = 'off';
             app.PROTOCOLDropDown.Tooltip = {'Select the Matlab file that should be executed on each window calculating the next feedback. '};
             app.PROTOCOLDropDown.Layout.Row = 1;
@@ -710,6 +750,13 @@ classdef app_exported < matlab.apps.AppBase
             app.CHANNELSFORCORRECTIONEditField.Layout.Row = 3;
             app.CHANNELSFORCORRECTIONEditField.Layout.Column = 2;
             app.CHANNELSFORCORRECTIONEditField.Value = '3';
+
+            % Create CHANNELSButton
+            app.CHANNELSButton = uibutton(app.GridLayout2, 'push');
+            app.CHANNELSButton.ButtonPushedFcn = createCallbackFcn(app, @CHANNELSButtonPushed, true);
+            app.CHANNELSButton.Layout.Row = 6;
+            app.CHANNELSButton.Layout.Column = 2;
+            app.CHANNELSButton.Text = 'SELECT';
 
             % Create STARTButton
             app.STARTButton = uibutton(app.UIFigure, 'push');
