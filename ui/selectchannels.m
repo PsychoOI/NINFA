@@ -79,6 +79,8 @@ classdef selectchannels < handle
             self.hRequired = uitable(self.hRequiredPanel);
             self.hRequired.ColumnName = {'MIN'; 'MAX'; 'SEL'; 'TYPE'; 'UNIT'};
             self.hRequired.ColumnWidth = {50, 50, 45, 'auto', 100};
+            self.hRequired.ColumnFormat = { 
+                'short', 'short', 'short', 'char', 'char' };
             self.hRequired.RowName = {};
             self.hRequired.ColumnEditable = [false false false false false];
             self.hRequired.Position = [...
@@ -87,13 +89,13 @@ classdef selectchannels < handle
                 selectchannels.tablewidth, ...
                 selectchannels.tableheightrequired];
             self.hRequired.SelectionType = 'cell';
-            self.hRequired.ColumnFormat = { 
-                'char', 'char', 'char', 'char', 'char' };
-            
+
             % create channels table
             self.hChannels = uitable(self.hChannelsPanel);
             self.hChannels.ColumnName = {''; 'LSL CH'; 'DEV CH'; 'TYPE'; 'UNIT'};
             self.hChannels.ColumnWidth = {25, 60, 60, 'auto', 100};
+            self.hChannels.ColumnFormat = { 
+                'logical', 'short', 'short', 'char', 'char' };
             self.hChannels.RowName = {};
             self.hChannels.ColumnEditable = [true false false false false];
             self.hChannels.Position = [...
@@ -103,8 +105,6 @@ classdef selectchannels < handle
                 selectchannels.tableheightchannels];
             self.hChannels.CellEditCallback = @self.onSelectedChanged;
             self.hChannels.SelectionType = 'cell';
-            self.hChannels.ColumnFormat = { 
-                'logical', 'char', 'char', 'char', 'char' };
 
             % create center style
             s = uistyle();
@@ -206,9 +206,9 @@ classdef selectchannels < handle
         function updateOK(self)
             isok = true;
             for idx = 1:size(self.hRequired.Data, 1)
-                min = self.hRequired.Data(idx, 1);
-                max = self.hRequired.Data(idx, 2);
-                sel = self.hRequired.Data(idx, 3);
+                min = str2double(self.hRequired.Data(idx, 1));
+                max = str2double(self.hRequired.Data(idx, 2));
+                sel = str2double(self.hRequired.Data(idx, 3));
                 if sel < min || sel > max
                    isok = false;
                    addStyle(self.hRequired, self.hStyleNotOk, 'cell', [idx 3]);
