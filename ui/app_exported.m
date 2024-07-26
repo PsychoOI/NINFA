@@ -91,6 +91,7 @@ classdef app_exported < matlab.apps.AppBase
             app.WINDOWSIZESEditField.Enable = false;
             app.SESSIONLENGTHSEditField.Enable = false;
             app.PROTOCOLDropDown.Enable = false;         
+            app.CHANNELSButton.Enable = false;
             app.SUBJECTEditField.Enable = false;
             app.RUNEditField.Enable = false;
             app.STUDYEditField.Enable = false;          
@@ -114,6 +115,7 @@ classdef app_exported < matlab.apps.AppBase
             app.WINDOWSIZESEditField.Enable = true;
             app.SESSIONLENGTHSEditField.Enable = true;
             app.PROTOCOLDropDown.Enable = true;
+            app.CHANNELSButton.Enable = true;
             app.SUBJECTEditField.Enable = true;
             app.RUNEditField.Enable = true;
             app.STUDYEditField.Enable = true;
@@ -130,6 +132,8 @@ classdef app_exported < matlab.apps.AppBase
             app.updateStatus();
         end
 
+        function onChannelsSelected(app, src, ~)
+        end
     end
     
     methods (Access = public)
@@ -246,9 +250,11 @@ classdef app_exported < matlab.apps.AppBase
         % Code that executes after component creation
         function startupFcn(app)
             global mysession;
+            global myselectchannels;
             app.UIFigure.Name = "Settings";
             addlistener(mysession, "Started", @app.onSessionStarted);
             addlistener(mysession, "Stopped", @app.onSessionStopped);
+            addlistener(myselectchannels, "Done", @app.onChannelsSelected);
             for idx = 1:length(devices.types)
                 app.TYPEDropDown.Items(idx) = cellstr(devices.types(idx));
             end
@@ -262,6 +268,7 @@ classdef app_exported < matlab.apps.AppBase
         % Button pushed function: OPENButton
         function OPENButtonPushed(app, event)
             global mylsl
+            global myselectchannels
             if ~mylsl.streaming
                 r = mylsl.open(app.TYPEEditField.Value);
                 if r
@@ -278,7 +285,8 @@ classdef app_exported < matlab.apps.AppBase
                     app.PROTOCOLDropDown.Enable = true;               
                     app.SUBJECTEditField.Enable = true;
                     app.RUNEditField.Enable = true;
-                    app.STUDYEditField.Enable = true;                 
+                    app.STUDYEditField.Enable = true;
+                    app.CHANNELSButton.Enable = true;
                     app.MARKERTable.Enable = 'on';
                     app.MARKERAddButton.Enable = true;
                     if size(app.MARKERTable.Data,1) > 0
@@ -293,6 +301,7 @@ classdef app_exported < matlab.apps.AppBase
                 end
             else
                 mylsl.close();
+                myselectchannels.close();
                 app.OPENButton.Text = "OPEN";
                 app.CHANNELSFOUNDLabel.Text = "-";
                 app.SAMPLERATELabel.Text = "-";
@@ -307,6 +316,7 @@ classdef app_exported < matlab.apps.AppBase
                 app.SUBJECTEditField.Enable = false;
                 app.RUNEditField.Enable = false;
                 app.STUDYEditField.Enable = false;
+                app.CHANNELSButton.Enable = false;
                 app.MARKERTable.Enable = 'off';
                 app.MARKERAddButton.Enable = false;
                 app.MARKERDelButton.Enable = false;
@@ -410,6 +420,7 @@ classdef app_exported < matlab.apps.AppBase
         % Menu selected function: LoadMenu
         function LoadMenuSelected(app, event)
             global mylsl;
+            global myselectchannels;
             [file, path] = uigetfile("./settings/*.mat");
             figure(app.UIFigure); % focus back
             filepath = string(path) + string(file);
@@ -433,12 +444,15 @@ classdef app_exported < matlab.apps.AppBase
             if isfield(settings, 'lsltype')
                 app.TYPEEditField.Value = settings.lsltype;
             end
-            if isfield(settings, 'channelsLS')
-                app.NEUROFEEDBACKCHANNELSEditField.Value = settings.channelsLS;                
+            if isfield(settings, 'channels')
+                myselectchannels.selected = settings.channels;              
             end
-            if isfield(settings, 'channelsSS')
-                app.CHANNELSFORCORRECTIONEditField.Value = settings.channelsSS;
-            end
+            %if isfield(settings, 'channelsLS')
+            %    app.NEUROFEEDBACKCHANNELSEditField.Value = settings.channelsLS;                
+            %end
+            %if isfield(settings, 'channelsSS')
+            %    app.CHANNELSFORCORRECTIONEditField.Value = settings.channelsSS;
+            %end
             if isfield(settings, 'windowsize')
                 app.WINDOWSIZESEditField.Value = settings.windowsize;
             end
@@ -475,6 +489,7 @@ classdef app_exported < matlab.apps.AppBase
         % Menu selected function: SaveMenu
         function SaveMenuSelected(app, event)
             global mydevices;
+            global myselectchannels;
             [file, path] = uiputfile("./settings/*.mat");
             figure(app.UIFigure); % focus back
             if isequal(file,0) || isequal(path,0)
@@ -484,8 +499,9 @@ classdef app_exported < matlab.apps.AppBase
             settings.devicetype = mydevices.selected.type;
             settings.devicename = mydevices.selected.name;
             settings.lsltype = app.TYPEEditField.Value;
-            settings.channelsLS = app.NEUROFEEDBACKCHANNELSEditField.Value;
-            settings.channelsSS = app.CHANNELSFORCORRECTIONEditField.Value;
+            settings.channels = myselectchannels.selected;
+            %settings.channelsLS = app.NEUROFEEDBACKCHANNELSEditField.Value;
+            %settings.channelsSS = app.CHANNELSFORCORRECTIONEditField.Value;
             settings.windowsize = app.WINDOWSIZESEditField.Value;
             settings.sessionlength = app.SESSIONLENGTHSEditField.Value;
             settings.protocol = app.PROTOCOLDropDown.Value;

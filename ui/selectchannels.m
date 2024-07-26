@@ -26,19 +26,34 @@ classdef selectchannels < handle
         hRequired      matlab.ui.control.Table;
         hChannels      matlab.ui.control.Table;
         hButton        matlab.ui.control.Button;
-        hStyleOk;
-        hStyleNotOk;   
+        hStyleOk       matlab.ui.style.Style;
+        hStyleNotOk    matlab.ui.style.Style; 
+        
+        selected uint32 = [];
+        isok logical = false;
     end
     
     events
-        Selected
+        Done
     end
     
     methods
-        function self = selectchannels()  
+        function r = get.selected(self)
+            r = self.selected;
+        end
+        function set.selected(self,val)
+            self.selected = val;
         end
         
         function show(self)
+            % window already open
+            if isvalid(self.hFig)
+                self.initRequired();
+                self.initSelected();
+                figure(self.hFig);
+                return;
+            end
+            
             % create figure
             self.hFig             = uifigure();
             self.hFig.Visible     = 'off';
@@ -67,7 +82,7 @@ classdef selectchannels < handle
             % create channels panel
             self.hChannelsPanel = uipanel(self.hFig);
             self.hChannelsPanel.AutoResizeChildren = 'on';
-            self.hChannelsPanel.Title = 'SELECTED';
+            self.hChannelsPanel.Title = 'SELECTED: 0';
             self.hChannelsPanel.Position = [
                 selectchannels.padding, ...
                 selectchannels.buttonheight + 2*selectchannels.padding, ...
@@ -136,10 +151,15 @@ classdef selectchannels < handle
             % init tables data
             self.initRequired();
             self.initSelected();
-            self.updateOK();
             
             % show
             self.hFig.Visible = 'on';
+        end
+        
+        function close(self)
+            if isvalid(self.hFig)
+                close(self.hFig);
+            end
         end
         
         function initRequired(self)
@@ -164,10 +184,12 @@ classdef selectchannels < handle
             lenreqs = size(self.hRequired.Data, 1);
             self.hChannels.Data = strings([0,5]);
             for idx = 1:mylsl.lslchannels
+                isselected = ismember(idx, self.selected);
+                isselectedstr = convertCharsToStrings(num2str(isselected));
                 if idx <= size(mydevices.selected.lsl.channels, 1) && ...
                    self.isShowChannel(mydevices.selected.lsl.channels(idx))
                     self.hChannels.Data(tblidx,:) = [
-                        "false", ...
+                        isselectedstr, ...
                         idx, ...
                         mydevices.selected.lsl.channels(idx).devch, ...
                         mydevices.selected.lsl.channels(idx).type, ...
@@ -176,7 +198,7 @@ classdef selectchannels < handle
                     tblidx = tblidx + 1;
                 elseif lenreqs == 0
                     self.hChannels.Data(tblidx,:) = [
-                        "false", ...
+                        isselectedstr, ...
                         idx, ...
                         "", ...
                         "", ...
@@ -185,6 +207,7 @@ classdef selectchannels < handle
                     tblidx = tblidx + 1;
                 end
             end
+            self.updateRequired();
         end
         
         function r = isShowChannel(self, channel)
@@ -203,42 +226,55 @@ classdef selectchannels < handle
             r = false;
         end
         
-        function updateOK(self)
-            isok = true;
-            for idx = 1:size(self.hRequired.Data, 1)
-                min = str2double(self.hRequired.Data(idx, 1));
-                max = str2double(self.hRequired.Data(idx, 2));
-                sel = str2double(self.hRequired.Data(idx, 3));
-                if sel < min || sel > max
-                   isok = false;
-                   addStyle(self.hRequired, self.hStyleNotOk, 'cell', [idx 3]);
-                else
-                   addStyle(self.hRequired, self.hStyleOk, 'cell', [idx 3]);
-                end
-            end
-            self.hButton.Enable = isok;
-        end
-        
-        function onSelectedChanged(self, ~, ~)
+        function updateRequired(self)
+            self.isok = ~isempty(self.selected);
             for idxreq = 1:size(self.hRequired.Data, 1)
                 typereq = self.hRequired.Data(idxreq, 4);
                 slctreq = 0;
                 for idxlsl = 1:size(self.hChannels.Data, 1)
-                    selected = self.hChannels.Data(idxlsl,1);
+                    checked = self.hChannels.Data(idxlsl,1);
                     typelsl = self.hChannels.Data(idxlsl,4);
-                    if selected == "1" && typereq == typelsl
+                    if checked == "1" && typereq == typelsl
                         slctreq = slctreq + 1;
                     end
                 end
                 self.hRequired.Data(idxreq, 3) = slctreq;
+                min = str2double(self.hRequired.Data(idxreq, 1));
+                max = str2double(self.hRequired.Data(idxreq, 2));
+                if slctreq < min || slctreq > max
+                    self.isok = false;
+                    addStyle(self.hRequired, ...
+                        self.hStyleNotOk, 'cell', [idxreq 3]);
+                else
+                    addStyle(self.hRequired, ...
+                        self.hStyleOk, 'cell', [idxreq 3]);
+                end
             end
-            self.updateOK();
+            self.hChannelsPanel.Title = "SELECTED: " + length(self.selected);
+            self.hButton.Enable = self.isok;
         end
         
+        function updateSelectedFromUI(self)
+            self.selected = [];
+            for idx = 1:size(self.hChannels.Data, 1)
+                row = self.hChannels.Data(idx,:);
+                if row(1) == "1"
+                    lslidx = str2double(row(2));
+                    self.selected(end+1) = lslidx;
+                end
+            end
+        end
+        
+        function onSelectedChanged(self, ~, ~)
+            self.updateSelectedFromUI();
+            self.updateRequired();
+        end
+
         function onButtonClicked(self, ~, ~)
             disp("OK");
-            notify(self, 'Selected');
-            close(self.hFig);
+            disp(self.selected);
+            notify(self, 'Done');
+            self.close();
         end
     end
 end
