@@ -236,10 +236,14 @@ classdef app_exported < matlab.apps.AppBase
         
         function useProtocol(app)
             global myprotocols;
+            global myselectchannels;
             name = convertCharsToStrings(app.PROTOCOLDropDown.Value);
             if myprotocols.select(name)
                 disp("SELECTED PROTOCOL: " + myprotocols.selected.name)
-            end      
+                myselectchannels.selected = [];
+                myselectchannels.initRequired();
+                myselectchannels.initSelected();
+            end
         end
     end
     

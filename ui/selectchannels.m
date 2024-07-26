@@ -1,6 +1,7 @@
 classdef selectchannels < handle
-    %FEEDBACK LSL CHANNEL SELECTION
-
+    %LSL CHANNEL SELECTION  
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     properties(Constant)
         figwidth  = 512;
         figheight = 512;
@@ -19,6 +20,8 @@ classdef selectchannels < handle
             2*selectchannels.padding - 16;
     end
     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     properties
         hFig           matlab.ui.Figure;
         hRequiredPanel matlab.ui.container.Panel;
@@ -28,21 +31,108 @@ classdef selectchannels < handle
         hButton        matlab.ui.control.Button;
         hStyleOk       matlab.ui.style.Style;
         hStyleNotOk    matlab.ui.style.Style; 
-        
-        selected uint32 = [];
-        isok logical = false;
+        selected       uint32  = [];
+        isok           logical = false;
     end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     events
         Done
     end
     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    methods (Access = private)
+        
+        % returns true if channel matches a requirement or no requirements
+        function r = isChannelVisible(self, channel)
+            lenreqs = size(self.hRequired.Data, 1);
+            if lenreqs == 0
+                r = true;
+                return
+            end
+            for idx = 1:lenreqs
+                if self.hRequired.Data(idx, 4) == channel.type && ...
+                   self.hRequired.Data(idx, 5) == channel.unit
+                    r = true;
+                    return;
+                end
+            end
+            r = false;
+        end
+        
+        % updates ok status
+        function updateOK(self)
+            global myprotocols;
+            global mydevices;
+            chreq = myprotocols.selected.fh.requires().channels;
+            chlsl = mydevices.selected.lsl.channels;
+            self.isok = ~isempty(self.selected);
+            for idxreq = 1:length(chreq)
+                found = 0;
+                for idxlsl = [self.selected]
+                    if chreq(idxreq).type == chlsl(idxlsl).type && ...
+                       chreq(idxreq).unit == chlsl(idxlsl).unit
+                        found = found + 1;
+                    end
+                end
+                min = chreq(idxreq).min;
+                max = chreq(idxreq).max;
+                if found < min || found > max
+                    self.isok = false;
+                    if isvalid(self.hRequired)
+                        self.hRequired.Data(idxreq, 3) = found;
+                        addStyle(self.hRequired, ...
+                            self.hStyleNotOk, 'cell', [idxreq 3]);
+                    end
+                else
+                    if isvalid(self.hRequired)
+                        self.hRequired.Data(idxreq, 3) = found;
+                        addStyle(self.hRequired, ...
+                            self.hStyleOk, 'cell', [idxreq 3]);
+                    end
+                end
+            end
+            if isvalid(self.hChannelsPanel)
+                self.hChannelsPanel.Title = "SELECTED: " + ...
+                    length(self.selected);
+            end
+            if isvalid(self.hButton)
+                self.hButton.Enable = self.isok;
+            end
+        end
+        
+        % executed when checkbox is changed
+        function onSelectedChanged(self, ~, ~)
+            newselected = [];
+            for idx = 1:size(self.hChannels.Data, 1)
+                row = self.hChannels.Data(idx,:);
+                if row(1) == "1"
+                    lslidx = str2double(row(2));
+                    newselected(end+1) = lslidx;
+                end
+            end
+            self.selected = newselected;
+        end
+
+        % executed on OK button
+        function onButtonClicked(self, ~, ~)
+            notify(self, 'Done');
+            self.close();
+        end
+    end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     methods
         function r = get.selected(self)
             r = self.selected;
         end
+        
         function set.selected(self,val)
             self.selected = val;
+            self.updateOK();
         end
         
         function show(self)
@@ -163,6 +253,9 @@ classdef selectchannels < handle
         end
         
         function initRequired(self)
+            if isempty(self.hFig) || ~isvalid(self.hFig)
+                return
+            end
             global myprotocols;
             req = myprotocols.selected.fh.requires();
             self.hRequired.Data = strings([0,5]);
@@ -178,6 +271,9 @@ classdef selectchannels < handle
         end
 
         function initSelected(self)
+            if isempty(self.hFig) || ~isvalid(self.hFig)
+                return;
+            end
             global mylsl;
             global mydevices;
             tblidx = 1;
@@ -187,7 +283,7 @@ classdef selectchannels < handle
                 isselected = ismember(idx, self.selected);
                 isselectedstr = convertCharsToStrings(num2str(isselected));
                 if idx <= size(mydevices.selected.lsl.channels, 1) && ...
-                   self.isShowChannel(mydevices.selected.lsl.channels(idx))
+                   self.isChannelVisible(mydevices.selected.lsl.channels(idx))
                     self.hChannels.Data(tblidx,:) = [
                         isselectedstr, ...
                         idx, ...
@@ -207,76 +303,7 @@ classdef selectchannels < handle
                     tblidx = tblidx + 1;
                 end
             end
-            self.updateRequired();
-        end
-        
-        function r = isShowChannel(self, channel)
-            lenreqs = size(self.hRequired.Data, 1);
-            if lenreqs == 0
-                r = true;
-                return
-            end
-            for idx = 1:lenreqs
-                if self.hRequired.Data(idx, 4) == channel.type && ...
-                   self.hRequired.Data(idx, 5) == channel.unit
-                    r = true;
-                    return;
-                end
-            end
-            r = false;
-        end
-        
-        function updateRequired(self)
-            self.isok = ~isempty(self.selected);
-            for idxreq = 1:size(self.hRequired.Data, 1)
-                typereq = self.hRequired.Data(idxreq, 4);
-                slctreq = 0;
-                for idxlsl = 1:size(self.hChannels.Data, 1)
-                    checked = self.hChannels.Data(idxlsl,1);
-                    typelsl = self.hChannels.Data(idxlsl,4);
-                    if checked == "1" && typereq == typelsl
-                        slctreq = slctreq + 1;
-                    end
-                end
-                self.hRequired.Data(idxreq, 3) = slctreq;
-                min = str2double(self.hRequired.Data(idxreq, 1));
-                max = str2double(self.hRequired.Data(idxreq, 2));
-                if slctreq < min || slctreq > max
-                    self.isok = false;
-                    addStyle(self.hRequired, ...
-                        self.hStyleNotOk, 'cell', [idxreq 3]);
-                else
-                    addStyle(self.hRequired, ...
-                        self.hStyleOk, 'cell', [idxreq 3]);
-                end
-            end
-            self.hChannelsPanel.Title = "SELECTED: " + length(self.selected);
-            self.hButton.Enable = self.isok;
-        end
-        
-        function updateSelectedFromUI(self)
-            self.selected = [];
-            for idx = 1:size(self.hChannels.Data, 1)
-                row = self.hChannels.Data(idx,:);
-                if row(1) == "1"
-                    lslidx = str2double(row(2));
-                    self.selected(end+1) = lslidx;
-                end
-            end
-        end
-        
-        function onSelectedChanged(self, ~, ~)
-            self.updateSelectedFromUI();
-            self.updateRequired();
-        end
-
-        function onButtonClicked(self, ~, ~)
-            disp("OK");
-            disp(self.selected);
-            notify(self, 'Done');
-            self.close();
+            self.updateOK();
         end
     end
 end
-
-
