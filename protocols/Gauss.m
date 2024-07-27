@@ -31,7 +31,7 @@ end
 
 % EXECUTED FOR EACH SLIDING WINDOW
 function r = process(...
-    marker, nChSS, samplerate, samplenum, ~, ...
+    marker, samplerate, samplenum, ~, ...
     windownum, window, isfullwindow, prevfeedback)
 
     % IMPORTANT: 
@@ -48,7 +48,7 @@ function r = process(...
     global Amplitude 
     global Filter
 
-    nChLS = (size(window,2)/4)-nChSS;
+    nChLS = (size(window,2)/4)-0;
 
     r    = 0.5;   % default return
     n    = 1;     % process every n-th window
@@ -185,7 +185,8 @@ function finish(session)
     
     nchannels = size(session.channels, 2)/4; % total number of channels (NF+Correction) 
     disp(nchannels)
-    nchannels_NF = nchannels - session.SizeCHSS; % only Feedback channels
+    %nchannels_NF = nchannels - session.SizeCHSS; % only Feedback channels
+    nchannels_NF = nchannels; % only Feedback channels
 
     % Choice 1: Plotting Channel Signal
 %   iW2 = 1;
@@ -208,20 +209,20 @@ function finish(session)
 
     % Choice 2: Plotting Channel Average
     NF = mean(session.data(:,2*nchannels+1:2*nchannels+nchannels_NF),2); % average of NF channels HbO
-    CC = mean(session.data(:,2*nchannels+nchannels_NF+1:3*nchannels),2); % average of channels for correction HbO
-    NF_HbR = mean(session.data(:,3*nchannels+1:3*nchannels+nchannels_NF),2); % average of NF channels HbR
-    CC_HbR = mean(session.data(:,3*nchannels+nchannels_NF+1:4*nchannels),2); % average of channels for correction HbR
+    %CC = mean(session.data(:,2*nchannels+nchannels_NF+1:3*nchannels),2); % average of channels for correction HbO
+    %NF_HbR = mean(session.data(:,3*nchannels+1:3*nchannels+nchannels_NF),2); % average of NF channels HbR
+    %CC_HbR = mean(session.data(:,3*nchannels+nchannels_NF+1:4*nchannels),2); % average of channels for correction HbR
     
     subplot(4,1,1);   
     plot(NF,'r'); % HbO
-    hold on 
-    plot(NF_HbR,'b'); % HbR           
+    %hold on 
+    %plot(NF_HbR,'b'); % HbR           
     title('Concentration Changes [uM]: Average of Neurofeedback Channels ');
-    subplot(4,1,2);   
-    plot(CC,'r'); % HbO
-    hold on 
-    plot(CC_HbR,'b'); % HbR           
-    title('Concentration Changes [uM]: Average of Channels for correction');            
+    %subplot(4,1,2);   
+    %plot(CC,'r'); % HbO
+    %hold on 
+    %plot(CC_HbR,'b'); % HbR           
+    %title('Concentration Changes [uM]: Average of Channels for correction');            
     
     % Plotting Feedback values
     subplot(4,1,3);

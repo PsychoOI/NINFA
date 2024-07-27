@@ -25,9 +25,8 @@ classdef app_exported < matlab.apps.AppBase
         SESSIONLENGTHSEditField         matlab.ui.control.NumericEditField
         PROTOCOLLabel                   matlab.ui.control.Label
         PROTOCOLDropDown                matlab.ui.control.DropDown
-        CHANNELSFORCORRECTIONEditFieldLabel  matlab.ui.control.Label
-        CHANNELSFORCORRECTIONEditField  matlab.ui.control.EditField
         CHANNELSButton                  matlab.ui.control.Button
+        CHANNELSLabel_3                 matlab.ui.control.Label
         STARTButton                     matlab.ui.control.Button
         SESSIONINFOPanel                matlab.ui.container.Panel
         GridLayout3                     matlab.ui.container.GridLayout
@@ -87,7 +86,6 @@ classdef app_exported < matlab.apps.AppBase
             app.LoadMenu.Enable = false;
             app.SaveMenu.Enable = false;
             app.NEUROFEEDBACKCHANNELSEditField.Enable = false;
-            app.CHANNELSFORCORRECTIONEditField.Enable = false;
             app.WINDOWSIZESEditField.Enable = false;
             app.SESSIONLENGTHSEditField.Enable = false;
             app.PROTOCOLDropDown.Enable = false;         
@@ -111,7 +109,6 @@ classdef app_exported < matlab.apps.AppBase
             app.LoadMenu.Enable = true;
             app.SaveMenu.Enable = true;
             app.NEUROFEEDBACKCHANNELSEditField.Enable = true;
-            app.CHANNELSFORCORRECTIONEditField.Enable = true;
             app.WINDOWSIZESEditField.Enable = true;
             app.SESSIONLENGTHSEditField.Enable = true;
             app.PROTOCOLDropDown.Enable = true;
@@ -283,7 +280,6 @@ classdef app_exported < matlab.apps.AppBase
                     app.TYPEEditField.Enable = false;
                     app.CHANNELSFOUNDLabel.Text = int2str(mylsl.lslchannels);
                     app.NEUROFEEDBACKCHANNELSEditField.Enable = true;
-                    app.CHANNELSFORCORRECTIONEditField.Enable = true;
                     app.WINDOWSIZESEditField.Enable = true;
                     app.SESSIONLENGTHSEditField.Enable = true;
                     app.PROTOCOLDropDown.Enable = true;               
@@ -313,7 +309,6 @@ classdef app_exported < matlab.apps.AppBase
                 app.DEVICEDropDown.Enable = true;
                 app.TYPEEditField.Enable = true;
                 app.NEUROFEEDBACKCHANNELSEditField.Enable = false;
-                app.CHANNELSFORCORRECTIONEditField.Enable = false;
                 app.WINDOWSIZESEditField.Enable = false;
                 app.SESSIONLENGTHSEditField.Enable = false;
                 app.PROTOCOLDropDown.Enable = false;
@@ -334,26 +329,25 @@ classdef app_exported < matlab.apps.AppBase
         function STARTButtonPushed(app, event)
             global mylsl;
             global mysession;
-            global SizeCHSS;
+            %global SizeCHSS;
             if ~mysession.running
                 %% Short channel to regress out
-                strchannelsSS = split(app.CHANNELSFORCORRECTIONEditField.Value, ',');
-                channelsSS = transpose(str2double(strchannelsSS));          
-                SizeCHSS = length(channelsSS);                
+                %strchannelsSS = "";%split(app.CHANNELSFORCORRECTIONEditField.Value, ',');
+                %channelsSS = transpose(str2double(strchannelsSS));          
+                %SizeCHSS = 0;%length(channelsSS);                
+
                 %% Long channel to average for NF
                 strchannels = split(app.NEUROFEEDBACKCHANNELSEditField.Value, ',');
                 channelsLS = transpose(str2double(strchannels));
                 
-                channels = [channelsLS channelsSS];
+                channels = [channelsLS];%[channelsLS channelsSS];
                 SizeCH = double(((mylsl.lslchannels)-1)/4); % LS + SS 
-%                 SizeCHLS = SizeCH - SizeCHSS;
-                
+
                 channels = [channels+1 (channels+1)+SizeCH  (channels+1)+2*SizeCH   (channels+1)+3*SizeCH  ];
                 
                 srate = mylsl.sratenom; % prefer claimed samplerate
                 if srate <= 0, srate = mylsl.srate; end % else use measured
                 blocksize = app.WINDOWSIZESEditField.Value * srate;
-                
                 
                 mylsl.reset(blocksize, channels);
                 mysession.start(...
@@ -362,7 +356,6 @@ classdef app_exported < matlab.apps.AppBase
                     app.WINDOWSIZESEditField.Value, ...
                     srate, ...
                     channels, ...
-                    SizeCHSS, ...
                     app.MARKERTable.Data, ...
                     app.STUDYEditField.Value, ...
                     app.SUBJECTEditField.Value, ...
@@ -545,28 +538,6 @@ classdef app_exported < matlab.apps.AppBase
             app.updateColors();
         end
 
-        % Value changed function: CHANNELSFORCORRECTIONEditField
-        function CHANNELSFORCORRECTIONEditFieldValueChanged(app, event)
-%             value = app.CHANNELSFORCORRECTIONEditField.Value;
-             global mylsl;
-            
-            newvalue = "";
-            values = split(app.CHANNELSFORCORRECTIONEditField.Value, ',');
-            for k = 1:length(values)
-                v = values{k};
-                v = strip(v, ' ');
-                [x, s] = str2num(v);
-                if s && x > 0 && x < (mylsl.lslchannels-1)/4
-                    newvalue = newvalue + x + ',';
-                end
-            end
-            newvalue = strip(newvalue, ',');
-            if newvalue == ""
-                newvalue = "1";
-            end
-            app.CHANNELSFORCORRECTIONEditField.Value = newvalue;
-        end
-
         % Value changed function: DEVICEDropDown
         function DEVICEDropDownValueChanged(app, event)
             app.useDevice();
@@ -689,7 +660,7 @@ classdef app_exported < matlab.apps.AppBase
             app.NEUROFEEDBACKCHANNELSEditFieldLabel = uilabel(app.GridLayout2);
             app.NEUROFEEDBACKCHANNELSEditFieldLabel.HorizontalAlignment = 'center';
             app.NEUROFEEDBACKCHANNELSEditFieldLabel.FontSize = 11;
-            app.NEUROFEEDBACKCHANNELSEditFieldLabel.Layout.Row = 2;
+            app.NEUROFEEDBACKCHANNELSEditFieldLabel.Layout.Row = 3;
             app.NEUROFEEDBACKCHANNELSEditFieldLabel.Layout.Column = 1;
             app.NEUROFEEDBACKCHANNELSEditFieldLabel.Text = 'NEUROFEEDBACK CHANNELS';
 
@@ -698,7 +669,7 @@ classdef app_exported < matlab.apps.AppBase
             app.NEUROFEEDBACKCHANNELSEditField.ValueChangedFcn = createCallbackFcn(app, @NEUROFEEDBACKCHANNELSEditFieldValueChanged, true);
             app.NEUROFEEDBACKCHANNELSEditField.Enable = 'off';
             app.NEUROFEEDBACKCHANNELSEditField.Tooltip = {'Enter comma separated numeric values larger than zero and less or equal to LSL channels.'};
-            app.NEUROFEEDBACKCHANNELSEditField.Layout.Row = 2;
+            app.NEUROFEEDBACKCHANNELSEditField.Layout.Row = 3;
             app.NEUROFEEDBACKCHANNELSEditField.Layout.Column = 2;
             app.NEUROFEEDBACKCHANNELSEditField.Value = '2';
 
@@ -754,29 +725,19 @@ classdef app_exported < matlab.apps.AppBase
             app.PROTOCOLDropDown.Layout.Column = 2;
             app.PROTOCOLDropDown.Value = {};
 
-            % Create CHANNELSFORCORRECTIONEditFieldLabel
-            app.CHANNELSFORCORRECTIONEditFieldLabel = uilabel(app.GridLayout2);
-            app.CHANNELSFORCORRECTIONEditFieldLabel.HorizontalAlignment = 'center';
-            app.CHANNELSFORCORRECTIONEditFieldLabel.FontSize = 11;
-            app.CHANNELSFORCORRECTIONEditFieldLabel.Layout.Row = 3;
-            app.CHANNELSFORCORRECTIONEditFieldLabel.Layout.Column = 1;
-            app.CHANNELSFORCORRECTIONEditFieldLabel.Text = 'CHANNELS FOR CORRECTION';
-
-            % Create CHANNELSFORCORRECTIONEditField
-            app.CHANNELSFORCORRECTIONEditField = uieditfield(app.GridLayout2, 'text');
-            app.CHANNELSFORCORRECTIONEditField.ValueChangedFcn = createCallbackFcn(app, @CHANNELSFORCORRECTIONEditFieldValueChanged, true);
-            app.CHANNELSFORCORRECTIONEditField.Enable = 'off';
-            app.CHANNELSFORCORRECTIONEditField.Tooltip = {'Enter comma separated numeric values larger than zero and less or equal to LSL channels.'};
-            app.CHANNELSFORCORRECTIONEditField.Layout.Row = 3;
-            app.CHANNELSFORCORRECTIONEditField.Layout.Column = 2;
-            app.CHANNELSFORCORRECTIONEditField.Value = '3';
-
             % Create CHANNELSButton
             app.CHANNELSButton = uibutton(app.GridLayout2, 'push');
             app.CHANNELSButton.ButtonPushedFcn = createCallbackFcn(app, @CHANNELSButtonPushed, true);
-            app.CHANNELSButton.Layout.Row = 6;
+            app.CHANNELSButton.Layout.Row = 2;
             app.CHANNELSButton.Layout.Column = 2;
             app.CHANNELSButton.Text = 'SELECT';
+
+            % Create CHANNELSLabel_3
+            app.CHANNELSLabel_3 = uilabel(app.GridLayout2);
+            app.CHANNELSLabel_3.HorizontalAlignment = 'center';
+            app.CHANNELSLabel_3.Layout.Row = 2;
+            app.CHANNELSLabel_3.Layout.Column = 1;
+            app.CHANNELSLabel_3.Text = 'CHANNELS';
 
             % Create STARTButton
             app.STARTButton = uibutton(app.UIFigure, 'push');

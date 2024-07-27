@@ -15,7 +15,6 @@ classdef session < handle
         protocolsum double  = 0.0;        % sum tracked protocol exec time
         srate       double  = 0.0;        % sample rate
         channels    uint32  = [];         % channel numbers
-        SizeCHSS    uint32  = [];         % SS channel numbers
         data        double  = zeros(0,0); % session data
         times       double  = zeros(0);   % timestamps of sesssion data
         idx         uint32  = 0;          % current index in data and times
@@ -45,7 +44,7 @@ classdef session < handle
     methods
         %% Start a new session
         function r = start(self, protocol, lengthmax, window, srate, ...
-                           channels, SizeCHSS, markerinfo, study, subject, run)
+                           channels, markerinfo, study, subject, run)
             if self.running
                 r = false;
                 return;
@@ -61,7 +60,6 @@ classdef session < handle
             self.lengthmax = lengthmax;          
             self.srate = srate;
             self.channels = channels;
-            self.SizeCHSS = SizeCHSS;
             self.data = zeros(numrows, numcols);
             self.times = zeros(numrows, 1);
             self.feedback = zeros(numrows, 1);
@@ -200,7 +198,6 @@ classdef session < handle
             export.protocol = self.protocol;
             export.samplerate = self.srate;
             export.channels = self.channels;
-            export.SizeCHSS = self.SizeCHSS;
             export.starttime = datetime(self.starttime,'ConvertFrom','datenum');
             export.stoptime = datetime(self.stoptime,'ConvertFrom','datenum');
             export.duration = self.length;
