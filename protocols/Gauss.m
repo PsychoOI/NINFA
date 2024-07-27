@@ -191,19 +191,19 @@ function finish(session)
 %   iW2 = 1;
 %   for i = 1:nchannels
 %       subplot(nchannels+2,1,i);   
-%       plot(self.data(:,nchannels*2+i),'r'); % HbO
+%       plot(session.data(:,nchannels*2+i),'r'); % HbO
 %       hold on 
-%       plot(self.data(:,nchannels*3+i),'b'); % HbR
-%       title('Concentration Changes [uM]: Channel ' + string(self.channels(iW2)-1));
+%       plot(session.data(:,nchannels*3+i),'b'); % HbR
+%       title('Concentration Changes [uM]: Channel ' + string(session.channels(iW2)-1));
 %       iW2 = iW2 + 1;
 %   end
 %   % Plotting Feedback values
 %   subplot(nchannels+2,1,nchannels+1);
-%   plot(self.feedback(:,1));
+%   plot(session.feedback(:,1));
 %   title('Feedback');
 %   % Plotting Marker Values
 %   subplot(nchannels+2,1,nchannels+2);
-%   plot(self.markers(:,1));
+%   plot(session.markers(:,1));
 %   title('Marker');
 
     % Choice 2: Plotting Channel Average
