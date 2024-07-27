@@ -81,21 +81,22 @@ end
 function onSessionStarted(src, ~)
     global mylsl;
     global myfeedback;
-    global myprotocol;
+    global myprotocols;
     mylsl.marker = 0;
     mylsl.trigger(100);
     myfeedback.showBar();
-    myprotocol = feval(src.protocol);
-    myprotocol.init();
+    myprotocols.selected.fh.init();
 end
 
 function onSessionStopped(src, ~)
     global mylsl;
     global myfeedback;
+    global myprotocols;
     mylsl.marker = 0;
     mylsl.trigger(101);
     myfeedback.setBackground(src.bgcolor);
     myfeedback.hideBar();
+    myprotocols.selected.fh.finish(src);
 end
 
 function onSessionEpoch(src, ~)
@@ -112,7 +113,7 @@ end
 
 function onSessionWindow(src, ~)
     global myfeedback;
-    global myprotocol;
+    global myprotocols;
 
     prevfeedback = 0.5;
     if src.idx > 1
@@ -120,7 +121,7 @@ function onSessionWindow(src, ~)
     end
     
     tick = tic();
-    r = myprotocol.process (...
+    r = myprotocols.selected.fh.process (...
         src.marker,    src.SizeCHSS, src.srate, ...
         src.idx,       src.data(src.idx,:), ...
         src.windownum, src.window, ...
