@@ -33,7 +33,6 @@ classdef session < handle
         study       string  = "";         % name of study
         subject     uint32  = 1;          % subject numer
         run         uint32  = 1;          % run number
-        ploth       matlab.ui.Figure;
     end
     
     events
@@ -50,9 +49,6 @@ classdef session < handle
             if self.running
                 r = false;
                 return;
-            end
-            if isvalid(self.ploth)
-                close(self.ploth);
             end
             numrows = ceil(srate*lengthmax);
             numcols = size(channels,2); %length(channels);
