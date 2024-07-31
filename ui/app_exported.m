@@ -2,71 +2,69 @@ classdef app_exported < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
-        UIFigure                        matlab.ui.Figure
-        FileMenu                        matlab.ui.container.Menu
-        LoadMenu                        matlab.ui.container.Menu
-        SaveMenu                        matlab.ui.container.Menu
-        LSLSTREAMPanel                  matlab.ui.container.Panel
-        GridLayout                      matlab.ui.container.GridLayout
-        TYPELabel                       matlab.ui.control.Label
-        TYPEEditField                   matlab.ui.control.EditField
-        OPENButton                      matlab.ui.control.Button
-        CHANNELSLabel_2                 matlab.ui.control.Label
-        CHANNELSFOUNDLabel              matlab.ui.control.Label
-        SAMPLERATEDescLabel             matlab.ui.control.Label
-        SAMPLERATELabel                 matlab.ui.control.Label
-        SETTINGSPanel                   matlab.ui.container.Panel
-        GridLayout2                     matlab.ui.container.GridLayout
-        NEUROFEEDBACKCHANNELSEditFieldLabel  matlab.ui.control.Label
-        NEUROFEEDBACKCHANNELSEditField  matlab.ui.control.EditField
-        WINDOWSIZESEditFieldLabel       matlab.ui.control.Label
-        WINDOWSIZESEditField            matlab.ui.control.NumericEditField
-        SESSIONLENGTHSEditFieldLabel    matlab.ui.control.Label
-        SESSIONLENGTHSEditField         matlab.ui.control.NumericEditField
-        PROTOCOLLabel                   matlab.ui.control.Label
-        PROTOCOLDropDown                matlab.ui.control.DropDown
-        CHANNELSButton                  matlab.ui.control.Button
-        CHANNELSLabel_3                 matlab.ui.control.Label
-        STARTButton                     matlab.ui.control.Button
-        SESSIONINFOPanel                matlab.ui.container.Panel
-        GridLayout3                     matlab.ui.container.GridLayout
-        SESSIONSTARTEDDescLabel         matlab.ui.control.Label
-        SESSIONSTARTEDLabel             matlab.ui.control.Label
-        SESSIONENDEDDescLabel           matlab.ui.control.Label
-        SESSIONENDEDLabel               matlab.ui.control.Label
-        SESSIONLENGTHSDescLabel         matlab.ui.control.Label
-        SESSIONLENGTHLabel              matlab.ui.control.Label
-        SESSIONSAMPLESLabel             matlab.ui.control.Label
-        SESSIONDRIFTLabel               matlab.ui.control.Label
-        SESSIONSAMPLESDescLabel         matlab.ui.control.Label
-        SESSIONDRIFTDescLabel           matlab.ui.control.Label
-        SESSSIONSTATUSDescLabel         matlab.ui.control.Label
-        SESSIONSTATUSLabel              matlab.ui.control.Label
-        EPOCHSPanel                     matlab.ui.container.Panel
-        MARKERTable                     matlab.ui.control.Table
-        MARKERAddButton                 matlab.ui.control.Button
-        MARKERDelButton                 matlab.ui.control.Button
-        COLORButton                     matlab.ui.control.Button
-        IDPanel                         matlab.ui.container.Panel
-        GridLayout4                     matlab.ui.container.GridLayout
-        SUBJECTEditFieldLabel           matlab.ui.control.Label
-        SUBJECTEditField                matlab.ui.control.NumericEditField
-        RUNEditFieldLabel               matlab.ui.control.Label
-        RUNEditField                    matlab.ui.control.NumericEditField
-        STUDYEditFieldLabel             matlab.ui.control.Label
-        STUDYEditField                  matlab.ui.control.EditField
-        PROTOCOLTIMEPanel               matlab.ui.container.Panel
-        GridLayout5                     matlab.ui.container.GridLayout
-        PROTOCOLMaxLabel                matlab.ui.control.Label
-        PROTOCOLMaxDescLabel            matlab.ui.control.Label
-        PROTOCOLAvgLabel                matlab.ui.control.Label
-        PROTOCOLAvgDescLabel            matlab.ui.control.Label
-        DEVICEPanel                     matlab.ui.container.Panel
-        GridLayout6                     matlab.ui.container.GridLayout
-        MODELDropDownLabel              matlab.ui.control.Label
-        DEVICEDropDown                  matlab.ui.control.DropDown
-        TYPEDropDownLabel               matlab.ui.control.Label
-        TYPEDropDown                    matlab.ui.control.DropDown
+        UIFigure                      matlab.ui.Figure
+        FileMenu                      matlab.ui.container.Menu
+        LoadMenu                      matlab.ui.container.Menu
+        SaveMenu                      matlab.ui.container.Menu
+        LSLSTREAMPanel                matlab.ui.container.Panel
+        GridLayout                    matlab.ui.container.GridLayout
+        TYPELabel                     matlab.ui.control.Label
+        TYPEEditField                 matlab.ui.control.EditField
+        OPENButton                    matlab.ui.control.Button
+        CHANNELSLabel_2               matlab.ui.control.Label
+        CHANNELSFOUNDLabel            matlab.ui.control.Label
+        SAMPLERATEDescLabel           matlab.ui.control.Label
+        SAMPLERATELabel               matlab.ui.control.Label
+        SETTINGSPanel                 matlab.ui.container.Panel
+        GridLayout2                   matlab.ui.container.GridLayout
+        WINDOWSIZESEditFieldLabel     matlab.ui.control.Label
+        WINDOWSIZESEditField          matlab.ui.control.NumericEditField
+        SESSIONLENGTHSEditFieldLabel  matlab.ui.control.Label
+        SESSIONLENGTHSEditField       matlab.ui.control.NumericEditField
+        PROTOCOLLabel                 matlab.ui.control.Label
+        PROTOCOLDropDown              matlab.ui.control.DropDown
+        CHANNELSButton                matlab.ui.control.Button
+        CHANNELSLabel_3               matlab.ui.control.Label
+        STARTButton                   matlab.ui.control.Button
+        SESSIONINFOPanel              matlab.ui.container.Panel
+        GridLayout3                   matlab.ui.container.GridLayout
+        SESSIONSTARTEDDescLabel       matlab.ui.control.Label
+        SESSIONSTARTEDLabel           matlab.ui.control.Label
+        SESSIONENDEDDescLabel         matlab.ui.control.Label
+        SESSIONENDEDLabel             matlab.ui.control.Label
+        SESSIONLENGTHSDescLabel       matlab.ui.control.Label
+        SESSIONLENGTHLabel            matlab.ui.control.Label
+        SESSIONSAMPLESLabel           matlab.ui.control.Label
+        SESSIONDRIFTLabel             matlab.ui.control.Label
+        SESSIONSAMPLESDescLabel       matlab.ui.control.Label
+        SESSIONDRIFTDescLabel         matlab.ui.control.Label
+        SESSSIONSTATUSDescLabel       matlab.ui.control.Label
+        SESSIONSTATUSLabel            matlab.ui.control.Label
+        EPOCHSPanel                   matlab.ui.container.Panel
+        MARKERTable                   matlab.ui.control.Table
+        MARKERAddButton               matlab.ui.control.Button
+        MARKERDelButton               matlab.ui.control.Button
+        COLORButton                   matlab.ui.control.Button
+        IDPanel                       matlab.ui.container.Panel
+        GridLayout4                   matlab.ui.container.GridLayout
+        SUBJECTEditFieldLabel         matlab.ui.control.Label
+        SUBJECTEditField              matlab.ui.control.NumericEditField
+        RUNEditFieldLabel             matlab.ui.control.Label
+        RUNEditField                  matlab.ui.control.NumericEditField
+        STUDYEditFieldLabel           matlab.ui.control.Label
+        STUDYEditField                matlab.ui.control.EditField
+        PROTOCOLTIMEPanel             matlab.ui.container.Panel
+        GridLayout5                   matlab.ui.container.GridLayout
+        PROTOCOLMaxLabel              matlab.ui.control.Label
+        PROTOCOLMaxDescLabel          matlab.ui.control.Label
+        PROTOCOLAvgLabel              matlab.ui.control.Label
+        PROTOCOLAvgDescLabel          matlab.ui.control.Label
+        DEVICEPanel                   matlab.ui.container.Panel
+        GridLayout6                   matlab.ui.container.GridLayout
+        MODELDropDownLabel            matlab.ui.control.Label
+        DEVICEDropDown                matlab.ui.control.DropDown
+        TYPEDropDownLabel             matlab.ui.control.Label
+        TYPEDropDown                  matlab.ui.control.DropDown
     end
 
     
@@ -85,7 +83,6 @@ classdef app_exported < matlab.apps.AppBase
             app.STARTButton.Text = "STOP";
             app.LoadMenu.Enable = false;
             app.SaveMenu.Enable = false;
-            app.NEUROFEEDBACKCHANNELSEditField.Enable = false;
             app.WINDOWSIZESEditField.Enable = false;
             app.SESSIONLENGTHSEditField.Enable = false;
             app.PROTOCOLDropDown.Enable = false;         
@@ -108,7 +105,6 @@ classdef app_exported < matlab.apps.AppBase
             app.STARTButton.Text = "START";
             app.LoadMenu.Enable = true;
             app.SaveMenu.Enable = true;
-            app.NEUROFEEDBACKCHANNELSEditField.Enable = true;
             app.WINDOWSIZESEditField.Enable = true;
             app.SESSIONLENGTHSEditField.Enable = true;
             app.PROTOCOLDropDown.Enable = true;
@@ -279,7 +275,6 @@ classdef app_exported < matlab.apps.AppBase
                     app.DEVICEDropDown.Enable = false;
                     app.TYPEEditField.Enable = false;
                     app.CHANNELSFOUNDLabel.Text = int2str(mylsl.lslchannels);
-                    app.NEUROFEEDBACKCHANNELSEditField.Enable = true;
                     app.WINDOWSIZESEditField.Enable = true;
                     app.SESSIONLENGTHSEditField.Enable = true;
                     app.PROTOCOLDropDown.Enable = true;               
@@ -308,7 +303,6 @@ classdef app_exported < matlab.apps.AppBase
                 app.TYPEDropDown.Enable = true;
                 app.DEVICEDropDown.Enable = true;
                 app.TYPEEditField.Enable = true;
-                app.NEUROFEEDBACKCHANNELSEditField.Enable = false;
                 app.WINDOWSIZESEditField.Enable = false;
                 app.SESSIONLENGTHSEditField.Enable = false;
                 app.PROTOCOLDropDown.Enable = false;
@@ -329,26 +323,12 @@ classdef app_exported < matlab.apps.AppBase
         function STARTButtonPushed(app, event)
             global mylsl;
             global mysession;
-            %global SizeCHSS;
+            global myselectchannels;
             if ~mysession.running
-                %% Short channel to regress out
-                %strchannelsSS = "";%split(app.CHANNELSFORCORRECTIONEditField.Value, ',');
-                %channelsSS = transpose(str2double(strchannelsSS));          
-                %SizeCHSS = 0;%length(channelsSS);                
-
-                %% Long channel to average for NF
-                strchannels = split(app.NEUROFEEDBACKCHANNELSEditField.Value, ',');
-                channelsLS = transpose(str2double(strchannels));
-                
-                channels = [channelsLS];%[channelsLS channelsSS];
-                SizeCH = double(((mylsl.lslchannels)-1)/4); % LS + SS 
-
-                channels = [channels+1 (channels+1)+SizeCH  (channels+1)+2*SizeCH   (channels+1)+3*SizeCH  ];
-                
+                channels = myselectchannels.selected;
                 srate = mylsl.sratenom; % prefer claimed samplerate
                 if srate <= 0, srate = mylsl.srate; end % else use measured
                 blocksize = app.WINDOWSIZESEditField.Value * srate;
-                
                 mylsl.reset(blocksize, channels);
                 mysession.start(...
                     erase(app.PROTOCOLDropDown.Value, ".m"), ...
@@ -364,26 +344,6 @@ classdef app_exported < matlab.apps.AppBase
                 mysession.stop();
             end
 
-        end
-
-        % Value changed function: NEUROFEEDBACKCHANNELSEditField
-        function NEUROFEEDBACKCHANNELSEditFieldValueChanged(app, event)
-            global mylsl;
-            newvalue = "";
-            values = split(app.NEUROFEEDBACKCHANNELSEditField.Value, ',');
-            for k = 1:length(values)
-                v = values{k};
-                v = strip(v, ' ');
-                [x, s] = str2num(v);
-                if s && x > 0 && x <= (double(((mylsl.lslchannels)-1)/4)) %(mylsl.lslchannels-1)/4
-                    newvalue = newvalue + x + ',';
-                end
-            end
-            newvalue = strip(newvalue, ',');
-            if newvalue == ""
-                newvalue = "1";
-            end
-            app.NEUROFEEDBACKCHANNELSEditField.Value = newvalue;
         end
 
         % Button pushed function: MARKERAddButton
@@ -444,12 +404,6 @@ classdef app_exported < matlab.apps.AppBase
             if isfield(settings, 'channels')
                 myselectchannels.selected = settings.channels;              
             end
-            %if isfield(settings, 'channelsLS')
-            %    app.NEUROFEEDBACKCHANNELSEditField.Value = settings.channelsLS;                
-            %end
-            %if isfield(settings, 'channelsSS')
-            %    app.CHANNELSFORCORRECTIONEditField.Value = settings.channelsSS;
-            %end
             if isfield(settings, 'windowsize')
                 app.WINDOWSIZESEditField.Value = settings.windowsize;
             end
@@ -497,8 +451,6 @@ classdef app_exported < matlab.apps.AppBase
             settings.devicename = mydevices.selected.name;
             settings.lsltype = app.TYPEEditField.Value;
             settings.channels = myselectchannels.selected;
-            %settings.channelsLS = app.NEUROFEEDBACKCHANNELSEditField.Value;
-            %settings.channelsSS = app.CHANNELSFORCORRECTIONEditField.Value;
             settings.windowsize = app.WINDOWSIZESEditField.Value;
             settings.sessionlength = app.SESSIONLENGTHSEditField.Value;
             settings.protocol = app.PROTOCOLDropDown.Value;
@@ -594,7 +546,7 @@ classdef app_exported < matlab.apps.AppBase
             app.LSLSTREAMPanel = uipanel(app.UIFigure);
             app.LSLSTREAMPanel.AutoResizeChildren = 'off';
             app.LSLSTREAMPanel.Title = 'LSL STREAM';
-            app.LSLSTREAMPanel.Position = [22 601 623 118];
+            app.LSLSTREAMPanel.Position = [21 601 624 118];
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.LSLSTREAMPanel);
@@ -650,34 +602,17 @@ classdef app_exported < matlab.apps.AppBase
             app.SETTINGSPanel = uipanel(app.UIFigure);
             app.SETTINGSPanel.AutoResizeChildren = 'off';
             app.SETTINGSPanel.Title = 'SETTINGS';
-            app.SETTINGSPanel.Position = [21 383 375 205];
+            app.SETTINGSPanel.Position = [21 423 375 165];
 
             % Create GridLayout2
             app.GridLayout2 = uigridlayout(app.SETTINGSPanel);
-            app.GridLayout2.RowHeight = {'1x', '1x', '1x', '1x', '1x', '1x'};
-
-            % Create NEUROFEEDBACKCHANNELSEditFieldLabel
-            app.NEUROFEEDBACKCHANNELSEditFieldLabel = uilabel(app.GridLayout2);
-            app.NEUROFEEDBACKCHANNELSEditFieldLabel.HorizontalAlignment = 'center';
-            app.NEUROFEEDBACKCHANNELSEditFieldLabel.FontSize = 11;
-            app.NEUROFEEDBACKCHANNELSEditFieldLabel.Layout.Row = 3;
-            app.NEUROFEEDBACKCHANNELSEditFieldLabel.Layout.Column = 1;
-            app.NEUROFEEDBACKCHANNELSEditFieldLabel.Text = 'NEUROFEEDBACK CHANNELS';
-
-            % Create NEUROFEEDBACKCHANNELSEditField
-            app.NEUROFEEDBACKCHANNELSEditField = uieditfield(app.GridLayout2, 'text');
-            app.NEUROFEEDBACKCHANNELSEditField.ValueChangedFcn = createCallbackFcn(app, @NEUROFEEDBACKCHANNELSEditFieldValueChanged, true);
-            app.NEUROFEEDBACKCHANNELSEditField.Enable = 'off';
-            app.NEUROFEEDBACKCHANNELSEditField.Tooltip = {'Enter comma separated numeric values larger than zero and less or equal to LSL channels.'};
-            app.NEUROFEEDBACKCHANNELSEditField.Layout.Row = 3;
-            app.NEUROFEEDBACKCHANNELSEditField.Layout.Column = 2;
-            app.NEUROFEEDBACKCHANNELSEditField.Value = '2';
+            app.GridLayout2.RowHeight = {'1x', '1x', '1x', '1x'};
 
             % Create WINDOWSIZESEditFieldLabel
             app.WINDOWSIZESEditFieldLabel = uilabel(app.GridLayout2);
             app.WINDOWSIZESEditFieldLabel.HorizontalAlignment = 'center';
             app.WINDOWSIZESEditFieldLabel.FontSize = 11;
-            app.WINDOWSIZESEditFieldLabel.Layout.Row = 4;
+            app.WINDOWSIZESEditFieldLabel.Layout.Row = 3;
             app.WINDOWSIZESEditFieldLabel.Layout.Column = 1;
             app.WINDOWSIZESEditFieldLabel.Text = 'WINDOW SIZE (S)';
 
@@ -686,7 +621,7 @@ classdef app_exported < matlab.apps.AppBase
             app.WINDOWSIZESEditField.Limits = [0 3600];
             app.WINDOWSIZESEditField.HorizontalAlignment = 'left';
             app.WINDOWSIZESEditField.Enable = 'off';
-            app.WINDOWSIZESEditField.Layout.Row = 4;
+            app.WINDOWSIZESEditField.Layout.Row = 3;
             app.WINDOWSIZESEditField.Layout.Column = 2;
             app.WINDOWSIZESEditField.Value = 2;
 
@@ -694,7 +629,7 @@ classdef app_exported < matlab.apps.AppBase
             app.SESSIONLENGTHSEditFieldLabel = uilabel(app.GridLayout2);
             app.SESSIONLENGTHSEditFieldLabel.HorizontalAlignment = 'center';
             app.SESSIONLENGTHSEditFieldLabel.FontSize = 11;
-            app.SESSIONLENGTHSEditFieldLabel.Layout.Row = 5;
+            app.SESSIONLENGTHSEditFieldLabel.Layout.Row = 4;
             app.SESSIONLENGTHSEditFieldLabel.Layout.Column = 1;
             app.SESSIONLENGTHSEditFieldLabel.Text = 'SESSION LENGTH (S)';
 
@@ -703,7 +638,7 @@ classdef app_exported < matlab.apps.AppBase
             app.SESSIONLENGTHSEditField.Limits = [0 3600];
             app.SESSIONLENGTHSEditField.HorizontalAlignment = 'left';
             app.SESSIONLENGTHSEditField.Enable = 'off';
-            app.SESSIONLENGTHSEditField.Layout.Row = 5;
+            app.SESSIONLENGTHSEditField.Layout.Row = 4;
             app.SESSIONLENGTHSEditField.Layout.Column = 2;
             app.SESSIONLENGTHSEditField.Value = 10;
 
@@ -884,7 +819,7 @@ classdef app_exported < matlab.apps.AppBase
             app.IDPanel = uipanel(app.UIFigure);
             app.IDPanel.AutoResizeChildren = 'off';
             app.IDPanel.Title = 'ID';
-            app.IDPanel.Position = [401 383 244 205];
+            app.IDPanel.Position = [401 426 244 162];
 
             % Create GridLayout4
             app.GridLayout4 = uigridlayout(app.IDPanel);
