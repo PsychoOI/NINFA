@@ -48,7 +48,8 @@ function r = process(...
     global Amplitude 
     global Filter
 
-    nChLS = (size(window,2)/4)-0;
+    %nChLS = (size(window,2)/4)-0;
+    nChLS = size(window,2);
 
     r    = 0.5;   % default return
     n    = 1;     % process every n-th window
@@ -74,10 +75,13 @@ function r = process(...
             % calculate on every n-th window: Real-Time Preprocessing
         elseif mod(windownum, n) == 0
 
-            DataConc = window(:,(size(window,2)/2)+1:end); % concentration data
+            %DataConc = window(:,(size(window,2)/2)+1:end); % concentration data HbO+HbR 
+            DataConc = window; % concentration data HbO+HbR
+            
             CounterRS = CounterRS + 1;
             % saving the value of the last frame   
             DataRS(CounterRS,1:nChLS)= DataConc(end,1:nChLS); % only HbO data of long channels
+            
             disp(CounterRS)
 
             if CounterRS  == floor(samplerate*30)-5 % 5 frames before 30 seconds of rest (to avoid final delays)
@@ -101,7 +105,7 @@ function r = process(...
                 end
 
                 disp('Rest Average')
-                DataFilt = DataRS(floor(samplerate*25):CounterRS,1:nChLS); %prendo solo HbO
+                DataFilt = DataRS(floor(samplerate*25):CounterRS,1:nChLS); % only HbO
                 disp(size(DataFilt))
                 
                 % Gaussian Filtering
@@ -128,7 +132,9 @@ function r = process(...
             % calculate on every n-th window: Real-Time Preprocessing
         elseif mod(windownum, n) == 0           
             
-            DataConc = window(:,(size(window,2)/2)+1:end); % concentration data 
+            %DataConc = window(:,(size(window,2)/2)+1:end); % concentration data HbO+HbR
+            DataConc = window; % concentration data HbO+HbR
+            
             size(DataConc)            
             DataConcHbO = DataConc(:,1:nChLS); % HbO LS channels
             
@@ -183,10 +189,12 @@ function finish(session)
     ploth = figure('Name', 'Session Plot');
     ploth.NumberTitle = 'off';
     
-    nchannels = size(session.channels, 2)/4; % total number of channels (NF+Correction) 
+    %nchannels = size(session.channels, 2)/4; % total number of channels (NF+Correction) 
+    nchannels = size(session.channels, 2); % total number of channels (NF+Correction) 
+
     disp(nchannels)
     %nchannels_NF = nchannels - session.SizeCHSS; % only Feedback channels
-    nchannels_NF = nchannels; % only Feedback channels
+    %nchannels_NF = nchannels; % only Feedback channels
 
     % Choice 1: Plotting Channel Signal
 %   iW2 = 1;
@@ -208,7 +216,9 @@ function finish(session)
 %   title('Marker');
 
     % Choice 2: Plotting Channel Average
-    NF = mean(session.data(:,2*nchannels+1:2*nchannels+nchannels_NF),2); % average of NF channels HbO
+    NF = mean(session.data,2); % average of NF channels HbO
+
+    %NF = mean(session.data(:,2*nchannels+1:2*nchannels+nchannels_NF),2); % average of NF channels HbO
     %CC = mean(session.data(:,2*nchannels+nchannels_NF+1:3*nchannels),2); % average of channels for correction HbO
     %NF_HbR = mean(session.data(:,3*nchannels+1:3*nchannels+nchannels_NF),2); % average of NF channels HbR
     %CC_HbR = mean(session.data(:,3*nchannels+nchannels_NF+1:4*nchannels),2); % average of channels for correction HbR
