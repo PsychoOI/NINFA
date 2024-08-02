@@ -153,8 +153,8 @@ classdef selectchannels < handle
             self.hFig.Units       = 'pixels';
             self.hFig.NumberTitle = 'off';
             self.hFig.Position    = [0, 0, ...
-                channels_lsl.figwidth, ... 
-                channels_lsl.figheight];
+                selectchannels.figwidth, ... 
+                selectchannels.figheight];
 
             % create required panel
             self.hRequiredPanel = uipanel(self.hFig);
