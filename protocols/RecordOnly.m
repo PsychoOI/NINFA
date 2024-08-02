@@ -26,13 +26,22 @@ function finish(session)
     ploth = figure('Name', 'Session Plot');
     ploth.NumberTitle = 'off';
     % Plotting up to four channels
-    nchannels = min(length(session.channels), 4);
+    nchannels = length(session.channels);
     nplots = nchannels+2;
-    for i = (1:nchannels)
-        subplot(nplots,1,i);
-        plot(session.data(:,i));
-        title('Channel ' + string(session.channels(i)));
+    
+    iplots = 1;
+    fn = fieldnames(session.data); %TODO: Cache this
+    for k = 1:numel(fn)
+        for i = 1:size(session.data.(fn{k}), 2)
+            subplot(nplots,1,iplots);
+            plot(session.data.(fn{k})(:,i));
+            title('Channel');
+            %title('Channel ' + string(session.channels(i)));
+            iplots = iplots + 1;
+        end
+
     end
+    
     % Plotting Feedback values
     subplot(nplots,1,nchannels+1);
     plot(session.feedback(:,1));

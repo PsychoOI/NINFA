@@ -49,7 +49,7 @@ function r = process(...
     global Filter
 
     %nChLS = (size(window,2)/4)-0;
-    nChLS = size(window,2);
+    nChLS = size(window.HbO,2);
 
     r    = 0.5;   % default return
     n    = 1;     % process every n-th window
@@ -76,7 +76,7 @@ function r = process(...
         elseif mod(windownum, n) == 0
 
             %DataConc = window(:,(size(window,2)/2)+1:end); % concentration data HbO+HbR 
-            DataConc = window; % concentration data HbO+HbR
+            DataConc = window.HbO; % concentration data HbO+HbR
             
             CounterRS = CounterRS + 1;
             % saving the value of the last frame   
@@ -133,7 +133,7 @@ function r = process(...
         elseif mod(windownum, n) == 0           
             
             %DataConc = window(:,(size(window,2)/2)+1:end); % concentration data HbO+HbR
-            DataConc = window; % concentration data HbO+HbR
+            DataConc = window.HbO; % concentration data HbO+HbR
             
             size(DataConc)            
             DataConcHbO = DataConc(:,1:nChLS); % HbO LS channels
@@ -216,7 +216,7 @@ function finish(session)
 %   title('Marker');
 
     % Choice 2: Plotting Channel Average
-    NF = mean(session.data,2); % average of NF channels HbO
+    NF = mean(session.data.HbO,2); % average of NF channels HbO
 
     %NF = mean(session.data(:,2*nchannels+1:2*nchannels+nchannels_NF),2); % average of NF channels HbO
     %CC = mean(session.data(:,2*nchannels+nchannels_NF+1:3*nchannels),2); % average of channels for correction HbO
