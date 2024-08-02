@@ -14,12 +14,17 @@ classdef session < handle
         protocolavg double  = 0.0;        % avg tracked protocol exec time
         protocolsum double  = 0.0;        % sum tracked protocol exec time
         srate       double  = 0.0;        % sample rate
+        device      struct  = struct();   % device used in session
         channels    uint32  = [];         % channel numbers
         data        double  = zeros(0,0); % session data
+        data2       struct  = struct();   % session data
+        
         times       double  = zeros(0);   % timestamps of sesssion data
         idx         uint32  = 0;          % current index in data and times
         firsttime   double  = 0.0;        % first time       
         window      double  = zeros(0,0); % current window
+        window2     struct  = struct();   % current window
+        
         windowtimes double  = zeros(0);   % current window times
         windowidx   uint32  = 0;          % current index in window
         windownum   uint32  = 1;          % current window num
@@ -42,9 +47,26 @@ classdef session < handle
     end
     
     methods
+        %% Return Channel Counts for each Type
+        function r = countChannelTypes(self)
+            r = struct();
+            lslchannels = self.device.lsl.channels;
+            numlslchannels = length(lslchannels);
+            for ch = self.channels
+                type = "unknown";
+                if ch <= numlslchannels
+                    type = lslchannels(ch).type;
+                end
+                if ~isfield(r, type)
+                    r.(type) = 0;
+                end
+                r.(type) = r.(type) + 1;
+            end
+        end
+        
         %% Start a new session
         function r = start(self, protocol, lengthmax, window, srate, ...
-                           channels, markerinfo, study, subject, run)
+                           device, channels, markerinfo, study, subject, run)
             if self.running
                 r = false;
                 return;
@@ -59,8 +81,20 @@ classdef session < handle
             self.protocolsum = 0.0;
             self.lengthmax = lengthmax;          
             self.srate = srate;
+            self.device = device;
             self.channels = channels;
             self.data = zeros(numrows, numcols);
+            
+            %WIP
+            counts = self.countChannelTypes();
+            self.data2 = struct();
+            self.window2 = struct();
+            fn = fieldnames(counts);
+            for k = 1:numel(fn)
+                self.data2.(fn{k}) = zeros(numrows, counts.(fn{k}));
+                self.window2.(fn{k}) = zeros(numrowswnd, counts.(fn{k}));
+            end
+            
             self.times = zeros(numrows, 1);
             self.feedback = zeros(numrows, 1);
             self.idx = 0;           
@@ -153,6 +187,24 @@ classdef session < handle
             relts = ts - self.firsttime;
             %% add sample to data
             self.idx = self.idx + 1;
+            
+            %WIP
+            colidx = struct();
+            lslchannels = self.device.lsl.channels;
+            numlslchannels = length(lslchannels);
+            for i = 1:length(self.channels)
+                ch = self.channels(i);
+                type = "unknown";
+                if ch <= numlslchannels
+                    type = lslchannels(ch).type;
+                end
+                if ~isfield(colidx, type)
+                    colidx.(type) = 1;
+                end
+                self.data2.(type)(self.idx, colidx.(type)) = sample(i);
+                colidx.(type) = colidx.(type) + 1;
+            end
+            
             self.data(self.idx,:) = sample;
             self.times(self.idx,:) = relts;
             self.markers(self.idx,:) = self.marker;
