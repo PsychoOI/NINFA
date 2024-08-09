@@ -65,56 +65,40 @@ function r = process(...
         if MarkerPrevious ~= 2
            CounterRS = 0;
            DataRS  = [];
-           RestValue = [];
         end
-        % return 0.5 until first full window
-        if ~isfullwindow
-            %r = 0.5;
-            % calculate on every n-th window: Real-Time Preprocessing
-        elseif mod(windownum, n) == 0
 
-            % saving the HbO values of the last sample   
-            CounterRS = CounterRS + 1;
-            DataRS(CounterRS,:) = window.HbO(end,:);
-            disp(CounterRS)
+        % saving the HbO values of the last sample   
+        CounterRS = CounterRS + 1;
+        DataRS(CounterRS,:) = window.HbO(end,:);
+        disp(CounterRS)
 
-            % 5 frames before 30 seconds of rest (to avoid final delays)
-            if CounterRS == floor(samplerate*30)-5
-                %% Performing the amplitude of the signal - 15 seconds before the start of the experiment
-                Rest_long = mean(DataRS(floor(samplerate*15):CounterRS,1:nChLS),2);
-                % 1 - Gaussian filtering 
-                Signal_Gauss = conv(Rest_long, Filter, 'same');
-                % sort data 
-                SortVector = sort(Signal_Gauss);
-                % the amplitude is the difference between the largest and the smallest
-                % value. The max is performed as the mean of the 25 largest samples and the
-                % min as the mean of the 25 smallest samples. (Ten samples were discarded
-                % above and at the bottom).
-                mean_top25 = mean(SortVector(end-35:end-10));
-                mean_low25 = mean(SortVector(10:35));
-                Amplitude  = abs(mean_top25 - mean_low25);
-                disp("Amplitude: " + sprintf('%.3f', Amplitude));
+        % 5 frames before 30 seconds of rest (to avoid final delays)
+        if CounterRS == floor(samplerate*30)-5
+            %% AMPLITUDE OF HBO OF LAST ~15S OF RESTING PHASE
+            % (1) Create average HbO channel from all HbO channels
+            mean_hbo = mean(DataRS(floor(samplerate*15):end,:),2);
+            % (2) Filter and sort average HbO channel
+            filtered = conv(mean_hbo, Filter, 'same');
+            sorted   = sort(filtered);
+            % (3) the amplitude is the difference between the largest and the smallest
+            % value. The max is performed as the mean of the 25 largest samples and the
+            % min as the mean of the 25 smallest samples. Ten samples were discarded
+            % above and at the bottom.
+            mean_top25 = mean(sorted(end-35:end-10));
+            mean_low25 = mean(sorted(10:35));
+            Amplitude  = abs(mean_top25 - mean_low25);
+            disp("Amplitude: " + sprintf('%.3f', Amplitude));
 
-                DataFilt = DataRS(floor(samplerate*25):CounterRS,1:nChLS); % only HbO
-                %disp(size(DataFilt))
-                
-                % Gaussian Filtering
-                for s = 1:size(DataFilt,2) 
-                    DataFiltGs(:,s) = conv(DataFilt(:,s), Filter, 'same'); 
-                end
-                    
-                RestValue(1,1) = mean(mean(DataFiltGs,2));
-
-                disp("Rest Average: " + sprintf('%.3f', RestValue));
-
-                %disp(RestValue)
+            %% AVERAGE OF HBO OF LAST ~5S OF RESTING PHASE
+            DataFilt = DataRS(floor(samplerate*25):end,:);
+            for s = 1:size(DataFilt,2) 
+                DataFiltGs(:,s) = conv(DataFilt(:,s), Filter, 'same'); 
             end
-            MarkerPrevious = marker;
-        else
-            MarkerPrevious = marker;
-            r = prevfeedback;
+            RestValue = mean(mean(DataFiltGs,2));
+            disp("Rest Average: " + sprintf('%.3f', RestValue));
         end
-        
+        MarkerPrevious = marker;
+ 
     elseif marker == 3
         %% MAIN PHASE
         MarkerPrevious = marker;
@@ -133,7 +117,8 @@ function r = process(...
             saveY = mean(mean(DataFilt,1));
 
             %% Feedback
-            feedback = (saveY - RestValue(1,1));
+            %feedback = (saveY - RestValue(1,1));
+            feedback = saveY - RestValue;
             Parameter = 0.1; % rescaling with respect to Rest. 0.1 is the amplitude that I want on rest, if it is not, then I rescaled.
             feedback1 = (feedback*Parameter)/Amplitude;
             feedback_N = (((feedback1 + 0.35) * (1))/ (0.7));
