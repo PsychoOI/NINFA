@@ -47,11 +47,7 @@ function r = process(...
     global Correction
     global Filter
 
-    %nChLS = (size(window,2)/4)-0;
-    %nChLS = size(window.HbO,2);
-
     r    = 0.5;   % default return
-    n    = 1;     % process every n-th window
     tick = tic(); % start time of execution
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -117,14 +113,11 @@ function r = process(...
         feedback = mean_hbo - RestValue;
         feedback = feedback * Correction;
         
-        % Range Mapping 
-        feedback_N = (((feedback + 0.4) * (1)) / (0.8));
-        % y = ( ((X-a)x(d-c)) / (b-a) ) + c 
+        % convert from expected [-0.4, 0.4] to [0, 1]
+        r = (((feedback + 0.4) * (1.0)) / (0.8));
+        % y = ( ((X-a)*(d-c)) / (b-a) ) + c 
         % ( a , b ) = initial interval --> (-0.4, 0.4) 
         % ( c , d ) = final interval   --> (0, 1) 
-
-        %disp(saveY)
-        r = feedback_N;
     else
         %% UNKNOWN PHASE
         r = prevfeedback;
