@@ -44,8 +44,7 @@ function r = process(...
     global RestValue
     global CounterRS
     global MarkerPrevious
-    global First
-    global Amplitude 
+    global Amplitude
     global Filter
 
     %nChLS = (size(window,2)/4)-0;
@@ -60,7 +59,6 @@ function r = process(...
     if marker == 1
         %% waiting phase at the very beginng (first epoch)
         MarkerPrevious = 1;
-        First = 0;
 
     elseif marker == 2
         %% RESTING PHASE
@@ -75,38 +73,30 @@ function r = process(...
             % calculate on every n-th window: Real-Time Preprocessing
         elseif mod(windownum, n) == 0
 
-            %DataConc = window(:,(size(window,2)/2)+1:end); % concentration data HbO+HbR 
-            DataConc = window.HbO; % concentration data HbO+HbR
-            
+            % saving the HbO values of the last sample   
             CounterRS = CounterRS + 1;
-            % saving the value of the last frame   
-            DataRS(CounterRS,1:nChLS)= DataConc(end,1:nChLS); % only HbO data of long channels
-            
+            DataRS(CounterRS,:) = window.HbO(end,:);
             disp(CounterRS)
 
-            if CounterRS  == floor(samplerate*30)-5 % 5 frames before 30 seconds of rest (to avoid final delays)
-                if First == 0 % only if it is the first Rest
-                    First = 1; 
-                    %% Performing the amplitude of the signal - 15 seconds before the start of the experiment
-                    Rest_long = mean(DataRS(floor(samplerate*15):CounterRS,1:nChLS),2);
-                    % 1 - Gaussian filtering 
-                    Signal_Gauss = conv(Rest_long, Filter, 'same');
-                    % sort data 
-                    SortVector = sort( Signal_Gauss);
-                    % the amplitude is the difference between the largest and the smallest
-                    % value. The max is performed as the mean of the 25 largest samples and the
-                    % min as the mean of the 25 smallest samples. (Ten samples were discarded
-                    % above and at the bottom).
-                    if mean(SortVector(end-35:end-10))>0 && mean(SortVector(10:35))<0
-                        Amplitude = abs(mean(SortVector(end-35:end-10))-mean(SortVector(10:35)));
-                    else
-                        Amplitude = abs(abs(mean(SortVector(end-35:end-10)))-abs(mean(SortVector(10:35))));
-                    end
-                end
+            % 5 frames before 30 seconds of rest (to avoid final delays)
+            if CounterRS == floor(samplerate*30)-5
+                %% Performing the amplitude of the signal - 15 seconds before the start of the experiment
+                Rest_long = mean(DataRS(floor(samplerate*15):CounterRS,1:nChLS),2);
+                % 1 - Gaussian filtering 
+                Signal_Gauss = conv(Rest_long, Filter, 'same');
+                % sort data 
+                SortVector = sort(Signal_Gauss);
+                % the amplitude is the difference between the largest and the smallest
+                % value. The max is performed as the mean of the 25 largest samples and the
+                % min as the mean of the 25 smallest samples. (Ten samples were discarded
+                % above and at the bottom).
+                mean_top25 = mean(SortVector(end-35:end-10));
+                mean_low25 = mean(SortVector(10:35));
+                Amplitude  = abs(mean_top25 - mean_low25);
+                disp("Amplitude: " + sprintf('%.3f', Amplitude));
 
-                disp('Rest Average')
                 DataFilt = DataRS(floor(samplerate*25):CounterRS,1:nChLS); % only HbO
-                disp(size(DataFilt))
+                %disp(size(DataFilt))
                 
                 % Gaussian Filtering
                 for s = 1:size(DataFilt,2) 
@@ -114,8 +104,10 @@ function r = process(...
                 end
                     
                 RestValue(1,1) = mean(mean(DataFiltGs,2));
-                
-                disp(RestValue)
+
+                disp("Rest Average: " + sprintf('%.3f', RestValue));
+
+                %disp(RestValue)
             end
             MarkerPrevious = marker;
         else
@@ -132,15 +124,10 @@ function r = process(...
             % calculate on every n-th window: Real-Time Preprocessing
         elseif mod(windownum, n) == 0           
             
-            %DataConc = window(:,(size(window,2)/2)+1:end); % concentration data HbO+HbR
-            DataConc = window.HbO; % concentration data HbO+HbR
-            
-            size(DataConc)            
-            DataConcHbO = DataConc(:,1:nChLS); % HbO LS channels
-            
             % Gaussian Filtering
-            for s = 1:nChLS
-                DataFilt(:,s) = conv(DataConcHbO(:,s), Filter, 'same'); % 'same' restituisce un output della stessa lunghezza di x
+            for s = 1:size(window.HbO,2)
+                % 'same' restituisce un output della stessa lunghezza di x
+                DataFilt(:,s) = conv(window.HbO(:,s), Filter, 'same'); 
             end
             
             saveY = mean(mean(DataFilt,1));
