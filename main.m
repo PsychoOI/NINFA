@@ -120,13 +120,18 @@ function onSessionWindow(src, ~)
         prevfeedback = src.feedback(src.idx-1);
     end
     
+    prevmarker = 0;
+    if src.idx > 1
+        prevmarker = src.markers(src.idx-1);
+    end
+
     tick = tic();
     r = myprotocols.selected.fh.process (...
         src.marker,    src.srate, ...
         src.idx,       src.data, ...
         src.windownum, src.window, ...
         src.windowidx >= src.windowsize, ...
-        prevfeedback);
+        prevfeedback,  prevmarker);
     span = toc(tick);
     
     myfeedback.setFeedback(r);

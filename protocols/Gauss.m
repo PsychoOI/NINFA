@@ -31,8 +31,9 @@ end
 
 % EXECUTED FOR EACH SLIDING WINDOW
 function r = process(...
-    marker, samplerate, samplenum, ~, ...
-    windownum, window, isfullwindow, prevfeedback)
+    marker, samplerate, samplenum, data, ...
+    windownum, window, isfullwindow, ...
+    prevfeedback, prevmarker)
 
     % IMPORTANT: 
     %   Your algorithm must take less than (1/samplerate) seconds 
@@ -40,10 +41,9 @@ function r = process(...
     %   If you're algorithm requires more time than that then
     %   run your calculation on every n-th window only and 
     %   repeat your previous feedback for all other windows.
+    global CounterRS
     global DataRS 
     global RestValue
-    global CounterRS
-    global MarkerPrevious
     global Correction
     global Filter
 
@@ -52,15 +52,13 @@ function r = process(...
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    if marker == 1
-        %% waiting phase at the very beginng (first epoch)
-        MarkerPrevious = 1;
-
-    elseif marker == 2
+    if marker == 2
         %% RESTING PHASE
-        if MarkerPrevious ~= 2
+        
+        % reset on switch
+        if prevmarker ~= 2
            CounterRS = 0;
-           DataRS  = [];
+           DataRS = [];
         end
 
         % saving the HbO values of the last sample   
@@ -95,11 +93,9 @@ function r = process(...
             RestValue = mean(mean(DataFiltGs,2));
             %disp("Rest Average: " + sprintf('%.3f', RestValue));
         end
-        MarkerPrevious = marker;
- 
+
     elseif marker == 3
-        %% MAIN PHASE
-        MarkerPrevious = marker;
+        %% CONCENTRATION PHASE
 
         % filter each HbO channel in current sliding window
         for ch = 1:size(window.HbO,2)
@@ -118,10 +114,6 @@ function r = process(...
         % y = ( ((X-a)*(d-c)) / (b-a) ) + c 
         % ( a , b ) = initial interval --> (-0.4, 0.4) 
         % ( c , d ) = final interval   --> (0, 1) 
-    else
-        %% UNKNOWN PHASE
-        r = prevfeedback;
-        warning("UNKNOWN EPOCH MARKER: " + marker)
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
