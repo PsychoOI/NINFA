@@ -44,11 +44,11 @@ function r = process(...
     global RestValue
     global CounterRS
     global MarkerPrevious
-    global Amplitude
+    global Correction
     global Filter
 
     %nChLS = (size(window,2)/4)-0;
-    nChLS = size(window.HbO,2);
+    %nChLS = size(window.HbO,2);
 
     r    = 0.5;   % default return
     n    = 1;     % process every n-th window
@@ -70,7 +70,7 @@ function r = process(...
         % saving the HbO values of the last sample   
         CounterRS = CounterRS + 1;
         DataRS(CounterRS,:) = window.HbO(end,:);
-        disp(CounterRS)
+        %disp(CounterRS)
 
         % 5 frames before 30 seconds of rest (to avoid final delays)
         if CounterRS == floor(samplerate*30)-5
@@ -87,7 +87,9 @@ function r = process(...
             mean_top25 = mean(sorted(end-35:end-10));
             mean_low25 = mean(sorted(10:35));
             Amplitude  = abs(mean_top25 - mean_low25);
-            disp("Amplitude: " + sprintf('%.3f', Amplitude));
+            Correction = 0.1 / Amplitude;
+            %disp("Amplitude:  " + sprintf('%.3f', Amplitude));
+            %disp("Correction: " + sprintf('%.3f', Correction));
 
             %% AVERAGE OF HBO OF LAST ~5S OF RESTING PHASE
             DataFilt = DataRS(floor(samplerate*25):end,:);
@@ -95,46 +97,34 @@ function r = process(...
                 DataFiltGs(:,s) = conv(DataFilt(:,s), Filter, 'same'); 
             end
             RestValue = mean(mean(DataFiltGs,2));
-            disp("Rest Average: " + sprintf('%.3f', RestValue));
+            %disp("Rest Average: " + sprintf('%.3f', RestValue));
         end
         MarkerPrevious = marker;
  
     elseif marker == 3
         %% MAIN PHASE
         MarkerPrevious = marker;
-        % return 0.5 until first full window
-        if ~isfullwindow
-            %r = 0.5;            
-            % calculate on every n-th window: Real-Time Preprocessing
-        elseif mod(windownum, n) == 0           
-            
-            % Gaussian Filtering
-            for s = 1:size(window.HbO,2)
-                % 'same' restituisce un output della stessa lunghezza di x
-                DataFilt(:,s) = conv(window.HbO(:,s), Filter, 'same'); 
-            end
-            
-            saveY = mean(mean(DataFilt,1));
 
-            %% Feedback
-            %feedback = (saveY - RestValue(1,1));
-            feedback = saveY - RestValue;
-            Parameter = 0.1; % rescaling with respect to Rest. 0.1 is the amplitude that I want on rest, if it is not, then I rescaled.
-            feedback1 = (feedback*Parameter)/Amplitude;
-            feedback_N = (((feedback1 + 0.35) * (1))/ (0.7));
-             % y= ( ((X-a)x(d-c)) / (b-a) )  + c 
-                % ( a , b ) = initial interval --> (-0.4, 0.4) 
-                % ( c , d ) = final interval --> (0 , 1) 
-            
-            disp(saveY)
-            
-            r = feedback_N;
-            
-        % skip this sample/window
-        else
-            r = prevfeedback;
+        % filter each HbO channel in current sliding window
+        for ch = 1:size(window.HbO,2)
+            DataFilt(:,ch) = conv(window.HbO(:,ch), Filter, 'same'); 
         end
 
+        % calculate mean HbO channel and mean HbO over time
+        mean_hbo = mean(mean(DataFilt,1));
+
+        % feedback is difference in HbO scaled by correction
+        feedback = mean_hbo - RestValue;
+        feedback = feedback * Correction;
+        
+        % Range Mapping 
+        feedback_N = (((feedback + 0.4) * (1)) / (0.8));
+        % y = ( ((X-a)x(d-c)) / (b-a) ) + c 
+        % ( a , b ) = initial interval --> (-0.4, 0.4) 
+        % ( c , d ) = final interval   --> (0, 1) 
+
+        %disp(saveY)
+        r = feedback_N;
     else
         %% UNKNOWN PHASE
         r = prevfeedback;
@@ -146,14 +136,24 @@ function r = process(...
     % time spent
     span = toc(tick);
     
-    % debug
-    disp("Processed sample " + samplenum + ...
-        " (window=" + windownum + ...
-        ", marker=" + marker + ...
-        ", duration=" + sprintf('%.3f', span) + "s):");
-    %     + ...
-    %         " data intensity" + intensity(1) + ...
-    %         " density " + density(1) );
+    % create debug output
+    output = ...
+        "| sample="   + sprintf('%05d', samplenum) + " " + ...
+        "| window="   + sprintf('%05d', windownum) + " " + ...
+        "| marker="   + sprintf('%02d', marker)    + " " + ...
+        "| duration=" + sprintf('%.3f', span)+"s"  + " " + ...
+        "| feedback=" + sprintf('%.3f', r)         + " ";
+    
+    % add values for marker=3
+    if marker == 3
+        output = output + ...
+            "| restavg="    + sprintf('%.3f', RestValue)  + " " + ...
+            "| wndavg="     + sprintf('%.3f', mean_hbo)   + " " + ...
+            "| correction=" + sprintf('%.3f', Correction) + " ";
+    end
+    
+    % show debug output
+    disp(output + "|");
 end
 
 % EXECUTED AT THE END OF THE SESSION
@@ -163,8 +163,8 @@ function finish(session)
     
     %nchannels = size(session.channels, 2)/4; % total number of channels (NF+Correction) 
     nchannels = size(session.channels, 2); % total number of channels (NF+Correction) 
-
-    disp(nchannels)
+    disp("FINISH: " + nchannels);
+    
     %nchannels_NF = nchannels - session.SizeCHSS; % only Feedback channels
     %nchannels_NF = nchannels; % only Feedback channels
 
