@@ -265,7 +265,7 @@ classdef app_exported < matlab.apps.AppBase
         function startupFcn(app)
             global mysession;
             global myselectchannels;
-            app.UIFigure.Name = "Settings";
+            app.UIFigure.Name = "NINFA v1.1.0";
             addlistener(mysession, "Started", @app.onSessionStarted);
             addlistener(mysession, "Stopped", @app.onSessionStopped);
             addlistener(myselectchannels, "Done", @app.onChannelsSelected);
