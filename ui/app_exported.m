@@ -253,7 +253,20 @@ classdef app_exported < matlab.apps.AppBase
                 myselectchannels.initRequired();
                 myselectchannels.initSelected();
             end
+            app.checkWindowSize();
             app.updateStartButton();
+        end
+        
+        function checkWindowSize(app)
+            global myprotocols
+            v = app.WINDOWSIZESEditField.Value;
+            if ~isempty(myprotocols.selected)
+                r = myprotocols.selected.fh.requires();
+                v = min(max(v, r.window.mins), r.window.maxs);
+            end
+            if app.WINDOWSIZESEditField.Value ~= v
+                app.WINDOWSIZESEditField.Value = v;
+            end
         end
     end
     
@@ -532,6 +545,11 @@ classdef app_exported < matlab.apps.AppBase
         function PROTOCOLDropDownValueChanged(app, event)
             app.useProtocol();
         end
+
+        % Value changed function: WINDOWSIZESEditField
+        function WINDOWSIZESEditFieldValueChanged(app, event)
+            app.checkWindowSize();
+        end
     end
 
     % Component initialization
@@ -638,11 +656,12 @@ classdef app_exported < matlab.apps.AppBase
             % Create WINDOWSIZESEditField
             app.WINDOWSIZESEditField = uieditfield(app.GridLayout2, 'numeric');
             app.WINDOWSIZESEditField.Limits = [0 3600];
+            app.WINDOWSIZESEditField.ValueChangedFcn = createCallbackFcn(app, @WINDOWSIZESEditFieldValueChanged, true);
             app.WINDOWSIZESEditField.HorizontalAlignment = 'left';
             app.WINDOWSIZESEditField.Enable = 'off';
             app.WINDOWSIZESEditField.Layout.Row = 3;
             app.WINDOWSIZESEditField.Layout.Column = 2;
-            app.WINDOWSIZESEditField.Value = 2;
+            app.WINDOWSIZESEditField.Value = 1;
 
             % Create SESSIONLENGTHSEditFieldLabel
             app.SESSIONLENGTHSEditFieldLabel = uilabel(app.GridLayout2);
