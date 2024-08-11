@@ -543,7 +543,7 @@ classdef app_exported < matlab.apps.AppBase
             % Create UIFigure and hide until all components are created
             app.UIFigure = uifigure('Visible', 'off');
             app.UIFigure.AutoResizeChildren = 'off';
-            app.UIFigure.Position = [100 100 657 832];
+            app.UIFigure.Position = [100 100 640 772];
             app.UIFigure.Name = 'MATLAB App';
             app.UIFigure.Resize = 'off';
 
@@ -565,11 +565,11 @@ classdef app_exported < matlab.apps.AppBase
             app.LSLSTREAMPanel = uipanel(app.UIFigure);
             app.LSLSTREAMPanel.AutoResizeChildren = 'off';
             app.LSLSTREAMPanel.Title = 'LSL STREAM';
-            app.LSLSTREAMPanel.Position = [21 601 624 118];
+            app.LSLSTREAMPanel.Position = [16 541 608 118];
 
             % Create GridLayout
             app.GridLayout = uigridlayout(app.LSLSTREAMPanel);
-            app.GridLayout.ColumnWidth = {'1.5x', '2x', '1x'};
+            app.GridLayout.ColumnWidth = {'1.32x', '2x', '1x'};
             app.GridLayout.RowHeight = {'1x', '1x', '1x'};
 
             % Create TYPELabel
@@ -621,7 +621,7 @@ classdef app_exported < matlab.apps.AppBase
             app.SETTINGSPanel = uipanel(app.UIFigure);
             app.SETTINGSPanel.AutoResizeChildren = 'off';
             app.SETTINGSPanel.Title = 'SETTINGS';
-            app.SETTINGSPanel.Position = [21 423 375 165];
+            app.SETTINGSPanel.Position = [16 363 375 165];
 
             % Create GridLayout2
             app.GridLayout2 = uigridlayout(app.SETTINGSPanel);
@@ -699,18 +699,18 @@ classdef app_exported < matlab.apps.AppBase
             app.STARTButton.ButtonPushedFcn = createCallbackFcn(app, @STARTButtonPushed, true);
             app.STARTButton.Enable = 'off';
             app.STARTButton.Tooltip = {'Start or stop session'};
-            app.STARTButton.Position = [18 19 622 22];
+            app.STARTButton.Position = [16 19 608 22];
             app.STARTButton.Text = 'START';
 
             % Create SESSIONINFOPanel
             app.SESSIONINFOPanel = uipanel(app.UIFigure);
             app.SESSIONINFOPanel.AutoResizeChildren = 'off';
             app.SESSIONINFOPanel.Title = 'SESSION INFO';
-            app.SESSIONINFOPanel.Position = [18 60 473 115];
+            app.SESSIONINFOPanel.Position = [17 56 473 115];
 
             % Create GridLayout3
             app.GridLayout3 = uigridlayout(app.SESSIONINFOPanel);
-            app.GridLayout3.ColumnWidth = {'0.75x', '1x', '0.75x', '1x'};
+            app.GridLayout3.ColumnWidth = {'0.7x', '1x', '0.7x', '1x'};
             app.GridLayout3.RowHeight = {'1x', '1x', '1x'};
 
             % Create SESSIONSTARTEDDescLabel
@@ -798,7 +798,7 @@ classdef app_exported < matlab.apps.AppBase
             app.EPOCHSPanel = uipanel(app.UIFigure);
             app.EPOCHSPanel.AutoResizeChildren = 'off';
             app.EPOCHSPanel.Title = 'EPOCHS';
-            app.EPOCHSPanel.Position = [20 188 625 185];
+            app.EPOCHSPanel.Position = [16 185 608 162];
 
             % Create MARKERTable
             app.MARKERTable = uitable(app.EPOCHSPanel);
@@ -809,14 +809,14 @@ classdef app_exported < matlab.apps.AppBase
             app.MARKERTable.CellEditCallback = createCallbackFcn(app, @MARKERTableCellEdit, true);
             app.MARKERTable.Tooltip = {'Define markers (a value between 1 and 99) for epochs here. An epoch is defined by its start and end time. A trigger will be sent at the beginning of each epoch.'};
             app.MARKERTable.Enable = 'off';
-            app.MARKERTable.Position = [11 36 494 120];
+            app.MARKERTable.Position = [11 13 484 120];
 
             % Create MARKERAddButton
             app.MARKERAddButton = uibutton(app.EPOCHSPanel, 'push');
             app.MARKERAddButton.ButtonPushedFcn = createCallbackFcn(app, @MARKERAddButtonPushed, true);
             app.MARKERAddButton.Enable = 'off';
             app.MARKERAddButton.Tooltip = {'Add an epoch'};
-            app.MARKERAddButton.Position = [513 122 100 34];
+            app.MARKERAddButton.Position = [504 99 93 34];
             app.MARKERAddButton.Text = '+';
 
             % Create MARKERDelButton
@@ -824,7 +824,7 @@ classdef app_exported < matlab.apps.AppBase
             app.MARKERDelButton.ButtonPushedFcn = createCallbackFcn(app, @MARKERDelButtonPushed, true);
             app.MARKERDelButton.Enable = 'off';
             app.MARKERDelButton.Tooltip = {'Remove last or selected epochs'};
-            app.MARKERDelButton.Position = [513 79 100 34];
+            app.MARKERDelButton.Position = [504 56 93 34];
             app.MARKERDelButton.Text = '-';
 
             % Create COLORButton
@@ -832,14 +832,14 @@ classdef app_exported < matlab.apps.AppBase
             app.COLORButton.ButtonPushedFcn = createCallbackFcn(app, @COLORButtonPushed, true);
             app.COLORButton.Enable = 'off';
             app.COLORButton.Tooltip = {'Select color for selected epochs'};
-            app.COLORButton.Position = [513 36 100 34];
+            app.COLORButton.Position = [504 13 93 34];
             app.COLORButton.Text = 'COLOR';
 
             % Create IDPanel
             app.IDPanel = uipanel(app.UIFigure);
             app.IDPanel.AutoResizeChildren = 'off';
             app.IDPanel.Title = 'ID';
-            app.IDPanel.Position = [401 426 244 162];
+            app.IDPanel.Position = [401 363 223 164];
 
             % Create GridLayout4
             app.GridLayout4 = uigridlayout(app.IDPanel);
@@ -894,7 +894,7 @@ classdef app_exported < matlab.apps.AppBase
             app.PROTOCOLTIMEPanel = uipanel(app.UIFigure);
             app.PROTOCOLTIMEPanel.AutoResizeChildren = 'off';
             app.PROTOCOLTIMEPanel.Title = 'PROTOCOL TIME';
-            app.PROTOCOLTIMEPanel.Position = [499 60 146 115];
+            app.PROTOCOLTIMEPanel.Position = [495 56 129 115];
 
             % Create GridLayout5
             app.GridLayout5 = uigridlayout(app.PROTOCOLTIMEPanel);
@@ -932,11 +932,11 @@ classdef app_exported < matlab.apps.AppBase
             app.DEVICEPanel = uipanel(app.UIFigure);
             app.DEVICEPanel.AutoResizeChildren = 'off';
             app.DEVICEPanel.Title = 'DEVICE';
-            app.DEVICEPanel.Position = [19 733 626 88];
+            app.DEVICEPanel.Position = [16 673 608 88];
 
             % Create GridLayout6
             app.GridLayout6 = uigridlayout(app.DEVICEPanel);
-            app.GridLayout6.ColumnWidth = {'1.5x', '2x', '1x'};
+            app.GridLayout6.ColumnWidth = {'1.32x', '2x', '1x'};
 
             % Create MODELDropDownLabel
             app.MODELDropDownLabel = uilabel(app.GridLayout6);
