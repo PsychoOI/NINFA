@@ -15,10 +15,10 @@ function r = requires()
     r.channels(1).min = 1;
     r.channels(1).max = 64;
     % HbR is optional
-    %r.channels(2).type = "HbR";
-    %r.channels(2).unit = "μmol/L";
-    %r.channels(2).min = 0;
-    %r.channels(2).max = 64;
+    r.channels(2).type = "HbR";
+    r.channels(2).unit = "μmol/L";
+    r.channels(2).min = 0;
+    r.channels(2).max = 64;
 end
 
 % EXECUTED ONCE ON START
@@ -154,58 +154,34 @@ function finish(session)
     ploth = figure('Name', 'Session Plot');
     ploth.NumberTitle = 'off';
     
-    %nchannels = size(session.channels, 2)/4; % total number of channels (NF+Correction) 
-    nchannels = size(session.channels, 2); % total number of channels (NF+Correction) 
-    disp("FINISH: " + nchannels);
+    nplot  = 1; % Current one
+    nplots = 3; % HbO, Feedback, Marker
+    if isfield(session.data, "HbR")
+        nplots = 4; % + HbR
+    end
     
-    %nchannels_NF = nchannels - session.SizeCHSS; % only Feedback channels
-    %nchannels_NF = nchannels; % only Feedback channels
-
-    % Choice 1: Plotting Channel Signal
-%   iW2 = 1;
-%   for i = 1:nchannels
-%       subplot(nchannels+2,1,i);   
-%       plot(session.data(:,nchannels*2+i),'r'); % HbO
-%       hold on 
-%       plot(session.data(:,nchannels*3+i),'b'); % HbR
-%       title('Concentration Changes [uM]: Channel ' + string(session.channels(iW2)-1));
-%       iW2 = iW2 + 1;
-%   end
-%   % Plotting Feedback values
-%   subplot(nchannels+2,1,nchannels+1);
-%   plot(session.feedback(:,1));
-%   title('Feedback');
-%   % Plotting Marker Values
-%   subplot(nchannels+2,1,nchannels+2);
-%   plot(session.markers(:,1));
-%   title('Marker');
-
-    % Choice 2: Plotting Channel Average
-    NF = mean(session.data.HbO,2); % average of NF channels HbO
-
-    %NF = mean(session.data(:,2*nchannels+1:2*nchannels+nchannels_NF),2); % average of NF channels HbO
-    %CC = mean(session.data(:,2*nchannels+nchannels_NF+1:3*nchannels),2); % average of channels for correction HbO
-    %NF_HbR = mean(session.data(:,3*nchannels+1:3*nchannels+nchannels_NF),2); % average of NF channels HbR
-    %CC_HbR = mean(session.data(:,3*nchannels+nchannels_NF+1:4*nchannels),2); % average of channels for correction HbR
+    % Plotting unfiltered HbO mean channel
+    subplot(nplots,1,nplot);
+    plot(mean(session.data.HbO,2),'r');
+    title('HbO [μmol/L]');
     
-    subplot(4,1,1);   
-    plot(NF,'r'); % HbO
-    %hold on 
-    %plot(NF_HbR,'b'); % HbR           
-    title('Concentration Changes [uM]: Average of Neurofeedback Channels ');
-    %subplot(4,1,2);   
-    %plot(CC,'r'); % HbO
-    %hold on 
-    %plot(CC_HbR,'b'); % HbR           
-    %title('Concentration Changes [uM]: Average of Channels for correction');            
-    
+    % Plotting unfiltered HbR mean channel (optional)
+    if isfield(session.data, "HbR")
+        nplot  = nplot + 1;
+        subplot(nplots,1,nplot);
+        plot(mean(session.data.HbR,2),'b');
+        title('HbR [μmol/L]');
+    end
+
     % Plotting Feedback values
-    subplot(4,1,3);
+    nplot = nplot + 1;
+    subplot(nplots,1,nplot);
     plot(session.feedback(:,1));
     title('Feedback');
     
     % Plotting Marker Values
-    subplot(4,1,4);
+    nplot = nplot + 1;
+    subplot(nplots,1,nplot);
     plot(session.markers(:,1));
     title('Marker');
 end
