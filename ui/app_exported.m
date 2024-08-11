@@ -125,7 +125,8 @@ classdef app_exported < matlab.apps.AppBase
             app.updateStatus();
         end
 
-        function onChannelsSelected(app, src, ~)
+        function onChannelsSelected(app, ~, ~)
+            app.updateStartButton();
         end
     end
     
@@ -198,6 +199,21 @@ classdef app_exported < matlab.apps.AppBase
             end
         end
         
+        function updateStartButton(app)
+            global myselectchannels
+            global mylsl
+            if ~mylsl.streaming
+                app.STARTButton.Text = "CONNECT LSL FIRST";
+                app.STARTButton.Enable = false;
+            elseif ~myselectchannels.isok
+                app.STARTButton.Text = "SELECT CHANNELS FIRST";
+                app.STARTButton.Enable = false;
+            else
+                app.STARTButton.Text = "START";
+                app.STARTButton.Enable = true;
+            end
+        end
+        
         function updateDevices(app)
             global mydevices;
             app.DEVICEDropDown.Items = {};
@@ -237,6 +253,7 @@ classdef app_exported < matlab.apps.AppBase
                 myselectchannels.initRequired();
                 myselectchannels.initSelected();
             end
+            app.updateStartButton();
         end
     end
     
@@ -288,7 +305,6 @@ classdef app_exported < matlab.apps.AppBase
                         app.MARKERDelButton.Enable = true;
                         app.COLORButton.Enable = true;
                     end
-                    app.STARTButton.Enable = true;
                 else
                     msgbox("No LSL stream with type '" + ...
                         app.TYPEEditField.Value + ...
@@ -314,9 +330,9 @@ classdef app_exported < matlab.apps.AppBase
                 app.MARKERAddButton.Enable = false;
                 app.MARKERDelButton.Enable = false;
                 app.COLORButton.Enable = false;
-                app.STARTButton.Enable = false;
                 app.SAMPLERATELabel.BackgroundColor = 'none';
             end
+            app.updateStartButton();
         end
 
         % Button pushed function: STARTButton
@@ -666,6 +682,7 @@ classdef app_exported < matlab.apps.AppBase
             % Create CHANNELSButton
             app.CHANNELSButton = uibutton(app.GridLayout2, 'push');
             app.CHANNELSButton.ButtonPushedFcn = createCallbackFcn(app, @CHANNELSButtonPushed, true);
+            app.CHANNELSButton.Enable = 'off';
             app.CHANNELSButton.Layout.Row = 2;
             app.CHANNELSButton.Layout.Column = 2;
             app.CHANNELSButton.Text = 'SELECT';
