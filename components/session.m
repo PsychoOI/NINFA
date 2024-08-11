@@ -16,6 +16,7 @@ classdef session < handle
         srate       double  = 0.0;        % sample rate
         device      struct  = struct();   % device used in session
         channels    uint32  = [];         % channel numbers
+        fn          cell    = [];         % field names in data and window
         data        struct  = struct();   % session data
         datasize    uint32  = 0;          % rows count in data
         times       double  = zeros(0);   % timestamps of sesssion data
@@ -76,20 +77,18 @@ classdef session < handle
             self.protocolmax = 0.0;
             self.protocolavg = 0.0;
             self.protocolsum = 0.0;
-            self.lengthmax = lengthmax;          
+            self.lengthmax = lengthmax;
             self.srate = srate;
             self.device = device;
             self.channels = channels;
-            
             counts = self.countChannelTypes();
             self.data = struct();
             self.window = struct();
-            fn = fieldnames(counts);
-            for k = 1:numel(fn)
-                self.data.(fn{k}) = zeros(self.datasize, counts.(fn{k}));
-                self.window.(fn{k}) = zeros(self.windowsize, counts.(fn{k}));
+            self.fn = fieldnames(counts);
+            for k = 1:numel(self.fn)
+                self.data.(self.fn{k}) = zeros(self.datasize, counts.(self.fn{k}));
+                self.window.(self.fn{k}) = zeros(self.windowsize, counts.(self.fn{k}));
             end
-            
             self.times = zeros(self.datasize, 1);
             self.feedback = zeros(self.datasize, 1);
             self.idx = 0;           
@@ -185,19 +184,16 @@ classdef session < handle
             if self.windowidx < self.windowsize
                 self.windowidx = self.windowidx + 1;
             else
-                fn = fieldnames(self.window); %TODO: Cache this
-                for k = 1:numel(fn)
-                    self.window.(fn{k}) = circshift(self.window.(fn{k}), -1);
+                for k = 1:numel(self.fn)
+                    self.window.(self.fn{k}) = ...
+                        circshift(self.window.(self.fn{k}), -1);
                 end
                 self.windowtimes = circshift(self.windowtimes, -1);
             end
-            
-            %self.window(self.windowidx,:) = sample;
             self.windowtimes(self.windowidx,:) = relts;
-            
+            self.times(self.idx,:) = relts;
+            self.markers(self.idx,:) = self.marker;
             %% add new sample to data and window
-
-            %WIP
             colidx = struct();
             lslchannels = self.device.lsl.channels;
             numlslchannels = length(lslchannels);
@@ -215,9 +211,6 @@ classdef session < handle
                 self.window.(type)(self.windowidx, colidx.(type)) = val;
                 colidx.(type) = colidx.(type) + 1;
             end
-            self.times(self.idx,:) = relts;
-            self.markers(self.idx,:) = self.marker;
-            
             %% raise window event
             notify(self, "Window");
             if self.windowidx >= self.windowsize
@@ -256,20 +249,19 @@ classdef session < handle
             export.duration = self.length;
             export.windowsamples = self.windowsize;
             % data
-            fn = fieldnames(self.data);
-            for k = 1:numel(fn)
-                export.data.(fn{k}) = self.data.(fn{k})(1:usedrows,:);
+            for k = 1:numel(self.fn)
+                export.data.(self.fn{k}) = self.data.(self.fn{k})(1:usedrows,:);
             end
             export.times = self.times(1:usedrows,:);
             export.feedback = self.feedback(1:usedrows,:);
             export.marker = self.markers(1:usedrows,:);
             % export
             studyname = "unnamed";
-            if self.study ~= ""; studyname = self.study; end          
+            if self.study ~= ""; studyname = self.study; end
             filename = ...
                 studyname + "-" + ...
                 sprintf('%03d', self.subject) + "-" + ...
-                sprintf('%02d', self.run);           
+                sprintf('%02d', self.run);
             save("./sessions/" + filename + ".mat", '-struct','export');
         end
     end
