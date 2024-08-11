@@ -3,14 +3,12 @@ classdef devices < handle
     %   Detailed explanation goes here
 
     properties (Constant)
-        types = ["NIRS", "EEG", "HRV", "GSR"]
+        types = ["NIRS", "EEG"]
     end
     
     properties
         nirs     struct = [];
         eeg      struct = [];
-        hrv      struct = [];
-        gsr      struct = []
         selected struct = struct([]);
     end
     
@@ -35,16 +33,6 @@ classdef devices < handle
                         self.eeg(idx).name = json.name;
                         self.eeg(idx).type = json.type;
                         self.eeg(idx).lsl = json.lsl;
-                    case "HRV"
-                        idx = length(self.hrv) + 1;
-                        self.hrv(idx).name = json.name;
-                        self.hrv(idx).type = json.type;
-                        self.hrv(idx).lsl = json.lsl;
-                    case "GSR"
-                        idx = length(self.gsr) + 1;
-                        self.gsr(idx).name = json.name;
-                        self.gsr(idx).type = json.type;
-                        self.gsr(idx).lsl = json.lsl;
                     otherwise
                         disp("Ignoring unknown device type");
                 end
@@ -65,22 +53,6 @@ classdef devices < handle
                     for d = 1:length(self.eeg)
                         if self.eeg(d).name == name
                             self.selected = self.eeg(d);
-                            r = true;
-                            return
-                        end
-                    end
-                case "HRV"
-                    for d = 1:length(self.hrv)
-                        if self.hrv(d).name == name
-                            self.selected = self.hrv(d);
-                            r = true;
-                            return
-                        end
-                    end
-                case "GSR"
-                    for d = 1:length(self.gsr)
-                        if self.gsr(d).name == name
-                            self.selected = self.gsr(d);
                             r = true;
                             return
                         end
