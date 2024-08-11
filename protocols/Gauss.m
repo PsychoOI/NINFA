@@ -47,6 +47,11 @@ function r = process(...
     global Correction
     global Filter
 
+    % CONSTANTS
+    EXPECTED_AMPLITUDE =  0.1;
+    EXPECTED_MIN_DIFF  = -0.4;
+    EXPECTED_MAX_DIFF  =  0.4;
+    
     r    = 0.5;   % default return
     tick = tic(); % start time of execution
     
@@ -68,29 +73,31 @@ function r = process(...
 
         % 5 frames before 30 seconds of rest (to avoid final delays)
         if CounterRS == floor(samplerate*30)-5
-            %% AMPLITUDE OF HBO OF LAST ~15S OF RESTING PHASE
-            % (1) Create average HbO channel from all HbO channels
-            mean_hbo = mean(DataRS(floor(samplerate*15):end,:),2);
-            % (2) Filter and sort average HbO channel
-            filtered = conv(mean_hbo, Filter, 'same');
-            sorted   = sort(filtered);
-            % (3) the amplitude is the difference between the largest and the smallest
-            % value. The max is performed as the mean of the 25 largest samples and the
-            % min as the mean of the 25 smallest samples. Ten samples were discarded
-            % above and at the bottom.
-            mean_top25 = mean(sorted(end-35:end-10));
-            mean_low25 = mean(sorted(10:35));
-            Amplitude  = abs(mean_top25 - mean_low25);
-            Correction = 0.1 / Amplitude;
-            %disp("Amplitude:  " + sprintf('%.3f', Amplitude));
+            %% CALCULATE CORRECTION FACTOR USING AMPLITUDE
+            % (1) Extract last ~15s of HbO channels of resting phase
+            % (2) Filter each HbO channel
+            % (3) Create average HbO channel from all filtered HbO channels
+            % (4) Sort average HbO channel
+            % (5) Calculate amplitude using mean of highest and lowest
+            filtered = DataRS(floor(samplerate*15):end,:);
+            for ch = 1:size(filtered,2) 
+                filtered(:,ch) = conv(filtered(:,ch), Filter, 'same'); 
+            end
+            mean_hbo   = mean(filtered,2);
+            mean_hbo   = sort(mean_hbo);
+            mean_top25 = mean(mean_hbo(end-35:end-10));
+            mean_low25 = mean(mean_hbo(10:35));
+            amplitude  = abs(mean_top25 - mean_low25);
+            Correction = EXPECTED_AMPLITUDE / amplitude;
+            %disp("Amplitude:  " + sprintf('%.3f', amplitude));
             %disp("Correction: " + sprintf('%.3f', Correction));
 
             %% AVERAGE OF HBO OF LAST ~5S OF RESTING PHASE
             DataFilt = DataRS(floor(samplerate*25):end,:);
-            for s = 1:size(DataFilt,2) 
-                DataFiltGs(:,s) = conv(DataFilt(:,s), Filter, 'same'); 
+            for ch = 1:size(DataFilt,2) 
+                DataFilt(:,ch) = conv(DataFilt(:,ch), Filter, 'same'); 
             end
-            RestValue = mean(mean(DataFiltGs,2));
+            RestValue = mean(mean(DataFilt,2));
             %disp("Rest Average: " + sprintf('%.3f', RestValue));
         end
 
@@ -109,11 +116,12 @@ function r = process(...
         feedback = mean_hbo - RestValue;
         feedback = feedback * Correction;
         
-        % convert from expected [-0.4, 0.4] to [0, 1]
-        r = (((feedback + 0.4) * (1.0)) / (0.8));
-        % y = ( ((X-a)*(d-c)) / (b-a) ) + c 
-        % ( a , b ) = initial interval --> (-0.4, 0.4) 
-        % ( c , d ) = final interval   --> (0, 1) 
+        % convert from expected range to [0,1] using
+        % r = (((X-a)*(d-c)) / (b-a)) + c 
+        % (a, b) = initial interval 
+        % (c, d) = final interval
+        r = (((feedback-EXPECTED_MIN_DIFF)*(1.0-0.0)) / ...
+            (EXPECTED_MAX_DIFF-EXPECTED_MIN_DIFF)) + 0.0;
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

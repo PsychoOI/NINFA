@@ -134,6 +134,8 @@ function onSessionWindow(src, ~)
         prevfeedback,  prevmarker);
     span = toc(tick);
     
+    r = min(max(r,0.0),1.0);
+    
     myfeedback.setFeedback(r);
     src.pushFeedback(r, span);
 end
