@@ -20,7 +20,7 @@ Small Matlab Framework for running Custom Neurofeedback Protocols on LSL Streams
 4. Configure `SETTINGS`, `ID` and `EPOCHS`
 5. Click `START` to run a session
 
-![ukt-nf-settings](https://github.com/cyberjunk/ukt-nf/assets/780159/0690b24e-7a20-4357-bd0d-9171c880115d)
+![ninfa](https://github.com/user-attachments/assets/7f8ba7ad-ea09-4d08-8384-57f182961430)
 
 ### LSL STREAM
 
