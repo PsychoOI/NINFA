@@ -22,6 +22,13 @@ Small Matlab Framework for running Custom Neurofeedback Protocols on LSL Streams
 
 ![ninfa](https://github.com/user-attachments/assets/7f8ba7ad-ea09-4d08-8384-57f182961430)
 
+### DEVICE
+
+* Select your device type and model from the available options.
+* Add a device by creating a `.json` file for it in subfolder `devices`
+  * Take a look at the existing `nirs_nirx_nirsport2.json`
+  * The most important part is defining the LSL channels sent by the device
+
 ### LSL STREAM
 
 | Setting       | Description                                                  |
@@ -89,6 +96,7 @@ An epoch is a configurable timespan within a session.
 
 * A protocol calculates a feedback value from an input window
 * To add a protocol put the Matlab file in subfolder `protocols`
+* The `Gauss.m` example requires a NIRS device that sends at least one `HbO` channel with `μmol/L` unit
 
 ## Drift and Execution Times
 
