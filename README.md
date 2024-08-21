@@ -97,7 +97,8 @@ An epoch is a configurable timespan within a session.
 * A protocol calculates a feedback value from an input window
 * To add a protocol put the Matlab file in subfolder `protocols`
 * The `Gauss.m` example requires a NIRS device that sends at least one `HbO` channel with `μmol/L` unit
-
+* The `RecordOnly.m` works with any device type and model and just records data
+ 
 ## Drift and Execution Times
 
 * `DRIFT` shows current offset in playback schedule (`where we are` vs. `where we should be`)
