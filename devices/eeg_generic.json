@@ -1,0 +1,8 @@
+{
+  "name": "Generic",
+  "type": "EEG",
+  "lsl": {
+    "type": "",
+	"channels": []
+  }
+}

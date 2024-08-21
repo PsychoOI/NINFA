@@ -1,4 +1,4 @@
-# UKT - Neurofeedback
+# NINFA
 
 Small Matlab Framework for running Custom Neurofeedback Protocols on LSL Streams
 
@@ -14,12 +14,20 @@ Small Matlab Framework for running Custom Neurofeedback Protocols on LSL Streams
 
 ## Configuration
 
-1. [Optional] Adjust `TYPE` of LSL input stream (default is for NIRS device) 
-2. Click `OPEN` to connect with LSL input stream
-3. Configure `SETTINGS`, `ID` and `EPOCHS`
-4. Click `START` to run a session
+1. Select your device
+2. [Optional] Adjust `TYPE` of LSL input stream
+3. Click `OPEN` to connect with LSL input stream
+4. Configure `SETTINGS`, `ID` and `EPOCHS`
+5. Click `START` to run a session
 
-![ukt-nf-settings](https://github.com/cyberjunk/ukt-nf/assets/780159/0690b24e-7a20-4357-bd0d-9171c880115d)
+![ninfa](https://github.com/user-attachments/assets/7f8ba7ad-ea09-4d08-8384-57f182961430)
+
+### DEVICE
+
+* Select your device type and model from the available options.
+* Add a device by creating a `.json` file for it in subfolder `devices`
+  * Take a look at the existing `nirs_nirx_nirsport2.json`
+  * The most important part is defining the LSL channels sent by the device
 
 ### LSL STREAM
 
@@ -38,10 +46,10 @@ Small Matlab Framework for running Custom Neurofeedback Protocols on LSL Streams
 
 | Setting              | Description                                                                                    |
 |----------------------|------------------------------------------------------------------------------------------------|
-| `SELECTED CHANNELS`  | Comma separated list of LSL input channel numbers to use (others are ignored).                 |
+| `PROTOCOL`           | The Matlab file from folder `protocols` with algorithm executed on each window.                |
+| `CHANNELS`           | Select LSL channels to use in the selected protocol                                            |
 | `WINDOW SIZE (S)`    | Size of the sliding window in seconds. The window always contains last n seconds of samples.   |
 | `SESSION LENGTH (S)` | The session will automatically stop after this time.                                           |
-| `PROTOCOL`           | The Matlab file from folder `protocols` with algorithm executed on each window.                |
 
 ### ID
 
@@ -88,8 +96,9 @@ An epoch is a configurable timespan within a session.
 
 * A protocol calculates a feedback value from an input window
 * To add a protocol put the Matlab file in subfolder `protocols`
-* See `example1.m` (returns a random feedback value)
-
+* The `Gauss.m` example requires a NIRS device that sends at least one `HbO` channel with `μmol/L` unit
+* The `RecordOnly.m` works with any device type and model and just records data
+ 
 ## Drift and Execution Times
 
 * `DRIFT` shows current offset in playback schedule (`where we are` vs. `where we should be`)

@@ -19,14 +19,20 @@ clear            % clear workspace
 % globals
 global mylsl;
 global mysession;
+global mydevices;
+global myprotocols;
+global myselectchannels;
 global mysettings;
 global myfeedback;
 
 % init globals
-mylsl      = lsl();
-mysession  = session();
-mysettings = app();
-myfeedback = feedback();
+mylsl            = lsl();
+mysession        = session();
+mydevices        = devices();
+myprotocols      = protocols();
+myselectchannels = selectchannels();
+mysettings       = app();
+myfeedback       = feedback();
 
 % add listeners to lsl
 lhsample = addlistener(mylsl, "NewSample", @onNewSample);
@@ -72,21 +78,25 @@ function onNewSample(src, ~)
     mysession.update();
 end
 
-function onSessionStarted(~, ~)
+function onSessionStarted(src, ~)
     global mylsl;
     global myfeedback;
+    global myprotocols;
     mylsl.marker = 0;
     mylsl.trigger(100);
     myfeedback.showBar();
+    myprotocols.selected.fh.init();
 end
 
 function onSessionStopped(src, ~)
     global mylsl;
     global myfeedback;
+    global myprotocols;
     mylsl.marker = 0;
     mylsl.trigger(101);
     myfeedback.setBackground(src.bgcolor);
     myfeedback.hideBar();
+    myprotocols.selected.fh.finish(src);
 end
 
 function onSessionEpoch(src, ~)
@@ -103,20 +113,28 @@ end
 
 function onSessionWindow(src, ~)
     global myfeedback;
+    global myprotocols;
 
     prevfeedback = 0.5;
     if src.idx > 1
         prevfeedback = src.feedback(src.idx-1);
     end
     
+    prevmarker = 0;
+    if src.idx > 1
+        prevmarker = src.markers(src.idx-1);
+    end
+
     tick = tic();
-    r = feval (src.protocol, ...
+    r = myprotocols.selected.fh.process (...
         src.marker,    src.srate, ...
-        src.idx,       src.data(src.idx,:), ...
+        src.idx,       src.data, ...
         src.windownum, src.window, ...
-        src.windowidx >= length(src.window), ...
-        prevfeedback);
+        src.windowidx >= src.windowsize, ...
+        prevfeedback,  prevmarker);
     span = toc(tick);
+    
+    r = min(max(r,0.0),1.0);
     
     myfeedback.setFeedback(r);
     src.pushFeedback(r, span);
