@@ -26,7 +26,6 @@ end
 function finish(session)
     ploth = figure('Name', 'Session Plot');
     ploth.NumberTitle = 'off';
-    % Plotting up to four channels
     nchannels = length(session.channels);
     nplots = nchannels+2;
     
@@ -37,7 +36,6 @@ function finish(session)
             subplot(nplots,1,iplots);
             plot(session.data.(fn{k})(:,i));
             title('Channel');
-            %title('Channel ' + string(session.channels(i)));
             iplots = iplots + 1;
         end
 
