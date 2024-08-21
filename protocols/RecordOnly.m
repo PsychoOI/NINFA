@@ -8,7 +8,6 @@ end
 % REQUIREMENTS FOR PROTOCOL
 function r = requires()
     r.devicetype  = "ANY";
-    r.markers     = [];
     r.window.mins = 1.0;
     r.window.maxs = 300.0;
     r.channels    = struct([]);

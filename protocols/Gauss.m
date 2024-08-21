@@ -8,7 +8,6 @@ end
 % REQUIREMENTS FOR PROTOCOL
 function r = requires()
     r.devicetype = "NIRS";
-    r.markers = [1, 2, 3];
     % required window min and max durations
     r.window.mins = 1.0;
     r.window.maxs = 10.0;
