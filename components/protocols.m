@@ -14,12 +14,19 @@ classdef protocols < handle
         function reload(self, device)
             self.list = [];
             self.selected = struct();
-            files = ls("protocols/*.m");
+            files = dir(fullfile("protocols", "*.m"));
             for f = 1:size(files, 1)
-                file = files(f, 1:end);
+                file = files(f).name;
                 name = strtrim(erase(file, ".m"));
-                fh = feval(name);
-                req = fh.requires();
+                disp("Attempting to call function: " + name); % Debugging output
+                try
+                    fh = feval(name);           
+                    req = fh.requires();
+                catch ME
+                    warning("Error calling function '" + name + "': " + ME.message); % Log any errors
+                    continue; % Skip to the next file
+            end
+
                 if ~self.iscompatible(req, device)
                     continue
                 end

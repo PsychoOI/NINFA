@@ -18,23 +18,31 @@ classdef devices < handle
         end
         
         function reload(self)
-            files = ls("devices/*.json");
+            files = dir(fullfile("devices", "*.json")); % Get a list of JSON 
             for f = 1:size(files, 1)
-                file = files(f, 1:end);
-                json = jsondecode(fileread("./devices/" + file));
-                switch json.type
-                    case "NIRS"
-                        idx = length(self.nirs) + 1;
-                        self.nirs(idx).name = json.name;
-                        self.nirs(idx).type = json.type;
-                        self.nirs(idx).lsl = json.lsl;
-                    case "EEG"
-                        idx = length(self.eeg) + 1;
-                        self.eeg(idx).name = json.name;
-                        self.eeg(idx).type = json.type;
-                        self.eeg(idx).lsl = json.lsl;
-                    otherwise
-                        disp("Ignoring unknown device type");
+                file = files(f).name; % Get the filename from the structure
+                disp("Attempting to open file: " + file); % Display the file being processed
+
+                % Construct the full path to the JSON file
+                filepath = fullfile(".", "devices", file);
+
+                % Check if the file exists before trying to read it
+                if exist(filepath, 'file') == 2
+                    json = jsondecode(fileread(filepath)); % Read and decode JSON
+                    switch json.type
+                        case "NIRS"
+                            idx = length(self.nirs) + 1;
+                            self.nirs(idx).name = json.name;
+                            self.nirs(idx).type = json.type;
+                            self.nirs(idx).lsl = json.lsl;
+                        case "EEG"
+                            idx = length(self.eeg) + 1;
+                            self.eeg(idx).name = json.name;
+                            self.eeg(idx).type = json.type;
+                            self.eeg(idx).lsl = json.lsl;
+                        otherwise
+                            disp("Ignoring unknown device type");
+                    end
                 end
             end
         end
