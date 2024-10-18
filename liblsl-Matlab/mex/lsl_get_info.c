@@ -1,9 +1,9 @@
 #include "lsl_common.h"
 
-/* function [Streaminfo] = lsl_get_info(LibHandle,Outlet) */
+/* function [Streaminfo] = lsl_get_info(LibHandle, Outlet) */
 
-void mexFunction( int nlhs, mxArray *plhs[], 
-		  int nrhs, const mxArray*prhs[] ) 
+void mexFunction(int nlhs, mxArray *plhs[], 
+                 int nrhs, const mxArray *prhs[]) 
 {
     /* handle of the desired field */
     mxArray *field;
@@ -13,26 +13,32 @@ void mexFunction( int nlhs, mxArray *plhs[],
     lsl_get_info_t func;
     /* input/output variables */
     uintptr_t out;
-    streaminfo result;
-    
+    void *result;
+
     if (nrhs != 2)
         mexErrMsgTxt("2 input argument(s) required."); 
     if (nlhs != 1)
         mexErrMsgTxt("1 output argument(s) required."); 
     
     /* get function handle */
-    field = mxGetField(prhs[0],0,"lsl_get_info");
+    field = mxGetField(prhs[0], 0, "lsl_get_info");
     if (!field)
         mexErrMsgTxt("The field does not seem to exist.");
-    pTmp = (uintptr_t*)mxGetData(field);
+    
+    pTmp = (uintptr_t *)mxGetData(field);
     if (!pTmp)
         mexErrMsgTxt("The field seems to be empty.");
-    func = (lsl_get_info_t*)*pTmp;
-    
+
+    /* Correctly assign the function pointer */
+    func = (lsl_get_info_t)(*pTmp);  // Dereference to get the function pointer
+
     /* get additional inputs */
-    out = *(uintptr_t*)mxGetData(prhs[1]);
-    
-    /* invoke & return */
-    result = func(out);
-    plhs[0] = mxCreateNumericMatrix(1,1,PTR_CLASS,mxREAL); *(uintptr_t*)mxGetData(plhs[0]) = (uintptr_t)result;
+    out = *(uintptr_t *)mxGetData(prhs[1]);
+
+    /* invoke the function */
+    result = func((outlet)out);  // Ensure correct casting to outlet
+
+    /* create output */
+    plhs[0] = mxCreateNumericMatrix(1, 1, PTR_CLASS, mxREAL);
+    *(uintptr_t *)mxGetData(plhs[0]) = (uintptr_t)result;
 }

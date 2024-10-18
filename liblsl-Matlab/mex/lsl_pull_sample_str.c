@@ -34,7 +34,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
     pTmp = (uintptr_t*)mxGetData(field);
     if (!pTmp)
         mexErrMsgTxt("The field seems to be empty.");
-    func = (lsl_pull_sample_str_t*)*pTmp;
+    func = (lsl_pull_sample_str_t)(*pTmp);  // Correct type casting without dereference
     
     /* get additional inputs */
     in = *(uintptr_t*)mxGetData(prhs[1]);
@@ -46,7 +46,9 @@ void mexFunction( int nlhs, mxArray *plhs[],
     timeout = *(double*)mxGetData(prhs[3]);    
     
     /* invoke & return */
-    timestamp = func(in,buffer,numchannels,timeout,&errcode);
+    timestamp = func((inlet)in, buffer, numchannels, timeout, &errcode);  // Cast in to inlet
+
+
     if (errcode) {
         if (errcode == lsl_timeout_error)
             mexErrMsgIdAndTxt("lsl:timeout_error","The operation timed out.");

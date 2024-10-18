@@ -33,9 +33,7 @@ classdef feedback < handle
 
             % create axes in the figure
             self.hAxes = axes(self.hFig); % Create axes as a child of the figure
-            disp('self.hFig:');
-            disp(self.hAxes);  % Output the value of self.hFig before calling bar
-
+            
             % create red bar
             self.hBarRed = bar(self.hAxes, 0);
             self.hBarRed.FaceColor = [0.8500 0.3250 0.0980];

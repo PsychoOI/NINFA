@@ -1,9 +1,9 @@
 #include "lsl_common.h"
 
-/* function [CreatedAt] = lsl_get_created_at(LibHandle,StreamInfo) */
+/* function [CreatedAt] = lsl_get_created_at(LibHandle, StreamInfo) */
 
-void mexFunction( int nlhs, mxArray *plhs[], 
-		  int nrhs, const mxArray*prhs[] ) 
+void mexFunction(int nlhs, mxArray *plhs[], 
+                 int nrhs, const mxArray* prhs[]) 
 {
     /* handle of the desired field */
     mxArray *field;
@@ -21,18 +21,21 @@ void mexFunction( int nlhs, mxArray *plhs[],
         mexErrMsgTxt("1 output argument(s) required."); 
     
     /* get function handle */
-    field = mxGetField(prhs[0],0,"lsl_get_created_at");
+    field = mxGetField(prhs[0], 0, "lsl_get_created_at");
     if (!field)
         mexErrMsgTxt("The field does not seem to exist.");
+    
     pTmp = (uintptr_t*)mxGetData(field);
     if (!pTmp)
         mexErrMsgTxt("The field seems to be empty.");
-    func = (lsl_get_created_at_t*)*pTmp;
+    
+    /* Correctly retrieve function pointer */
+    func = (lsl_get_created_at_t)(*pTmp);  // Corrected pointer assignment
     
     /* get additional inputs */
     info = *(uintptr_t*)mxGetData(prhs[1]);
     
     /* invoke & return */
-    created_at = func(info);
-    plhs[0] = mxCreateNumericMatrix(1,1,mxDOUBLE_CLASS,mxREAL); *(double*)mxGetData(plhs[0]) = (double)created_at;
+    created_at = func((streaminfo)info);  // Cast info to streaminfo type
+    plhs[0] = mxCreateDoubleScalar(created_at);  // Create output variable
 }

@@ -30,7 +30,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
         mexErrMsgTxt("0 output argument(s) required.");
         
     /* get outlet ptr */
-    out = *(uintptr_t*)mxGetData(prhs[1]);
+    out = (outlet)*(uintptr_t*)mxGetData(prhs[1]);  // Ensure correct casting
+
     
     if (nrhs >= 4) {
         /* read timestamp value */
@@ -54,7 +55,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
         pTmp = (uintptr_t*)mxGetData(field);
         if (!pTmp)
             mexErrMsgTxt("The field seems to be empty.");
-        func_num = (lsl_push_sample_dtp_t*)*pTmp;
+        func_num = *(lsl_push_sample_dtp_t**)pTmp;  // Correct dereference for function pointer
+
         /* invoke */
         returncode = func_num(out,(double*)mxGetData(prhs[2]),timestamp,pushthrough);
     } else  {
@@ -66,7 +68,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
             pTmp = (uintptr_t*)mxGetData(field);
             if (!pTmp)
                 mexErrMsgTxt("The field seems to be empty.");
-            func_buf = (lsl_push_sample_buftp_t*)*pTmp;            
+            func_buf = *(lsl_push_sample_buftp_t**)pTmp;  // Correct dereference for buffer function pointer
             
             /* allocate temporary buffer space */
             numcells = mxGetNumberOfElements(prhs[2]);

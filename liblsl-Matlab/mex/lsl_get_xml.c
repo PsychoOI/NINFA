@@ -2,8 +2,8 @@
 
 /* function [XML] = lsl_get_xml(LibHandle,StreamInfo) */
 
-void mexFunction( int nlhs, mxArray *plhs[], 
-		  int nrhs, const mxArray*prhs[] ) 
+void mexFunction(int nlhs, mxArray *plhs[], 
+                 int nrhs, const mxArray *prhs[]) 
 {
     /* handle of the desired field */
     mxArray *field;
@@ -15,24 +15,29 @@ void mexFunction( int nlhs, mxArray *plhs[],
     uintptr_t info;
     char *xml;
     
+    /* Validate the number of inputs/outputs */
     if (nrhs != 2)
-        mexErrMsgTxt("2 input argument(s) required."); 
+        mexErrMsgTxt("2 input argument(s) required.");
     if (nlhs != 1)
-        mexErrMsgTxt("1 output argument(s) required."); 
+        mexErrMsgTxt("1 output argument required.");
     
-    /* get function handle */
-    field = mxGetField(prhs[0],0,"lsl_get_xml");
+    /* Retrieve the function handle */
+    field = mxGetField(prhs[0], 0, "lsl_get_xml");
     if (!field)
         mexErrMsgTxt("The field does not seem to exist.");
-    pTmp = (uintptr_t*)mxGetData(field);
+    pTmp = (uintptr_t *)mxGetData(field);
     if (!pTmp)
         mexErrMsgTxt("The field seems to be empty.");
-    func = (lsl_get_xml_t*)*pTmp;
     
-    /* get additional inputs */
-    info = *(uintptr_t*)mxGetData(prhs[1]);
+    /* Correctly dereference and cast the function pointer */
+    func = (lsl_get_xml_t)(*pTmp);
     
-    /* invoke & return */
-    xml = func(info);
+    /* Get the streaminfo object */
+    info = *(uintptr_t *)mxGetData(prhs[1]);
+    
+    /* Invoke the function and retrieve the XML string */
+    xml = func((streaminfo)info);
+    
+    /* Return the XML string as a MATLAB string */
     plhs[0] = mxCreateString(xml);
 }

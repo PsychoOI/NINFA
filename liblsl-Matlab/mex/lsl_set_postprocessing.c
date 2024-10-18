@@ -1,39 +1,45 @@
 #include "lsl_common.h"
 
-/* function lsl_set_processing(LibHandle,inlet, processing_flags) */
+/* function lsl_set_processing(LibHandle, inlet, processing_flags) */
 
-void mexFunction( int nlhs, mxArray *plhs[], 
-		  int nrhs, const mxArray *prhs[] ) 
+void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) 
 {
-    /* handle of the desired field */
+    /* Handle for the desired field */
     mxArray *field;
-    /* temp pointer */
+    /* Temp pointer for function handle */
     uintptr_t *pTmp;
-    /* function handle */
+    /* Function handle */
     lsl_set_postprocessing_t func;
-    /* input/output variables */
+    /* Input variables */
     uintptr_t in;
-    processing_options_t proc_flag;
+    int proc_flag; // Change this to int assuming processing_options_t is defined as int in your context.
     
-    if (nrhs != 3)
+    /* Check number of input and output arguments */
+    if (nrhs != 3) {
         mexErrMsgTxt("3 input argument(s) required."); 
-    if (nlhs != 0)
+    }
+    if (nlhs != 0) {
         mexErrMsgTxt("0 output argument(s) required."); 
+    }
     
-    /* get function handle */
-    field = mxGetField(prhs[0],0,"lsl_set_postprocessing");
-    if (!field)
-        mexErrMsgTxt("The field does not seem to exist.");
-    pTmp = (uintptr_t*)mxGetData(field);
-    if (!pTmp)
-        mexErrMsgTxt("The field seems to be empty.");
-    func = (lsl_set_postprocessing_t*)*pTmp;
+    /* Get function handle */
+    field = mxGetField(prhs[0], 0, "lsl_set_postprocessing");
+    if (!field) {
+        mexErrMsgTxt("The field 'lsl_set_postprocessing' does not seem to exist.");
+    }
+    pTmp = (uintptr_t *)mxGetData(field);
+    if (!pTmp || mxGetNumberOfElements(field) == 0) {
+        mexErrMsgTxt("The field 'lsl_set_postprocessing' seems to be empty or invalid.");
+    }
+    func = (lsl_set_postprocessing_t)(*pTmp);  // Correctly dereference to get function pointer
     
-    /* get additional inputs */
-    in = *(uintptr_t*)mxGetData(prhs[1]);
-    if (mxGetClassID(prhs[2]) != mxDOUBLE_CLASS)
+    /* Get additional inputs */
+    in = *(uintptr_t *)mxGetData(prhs[1]);
+    if (mxGetClassID(prhs[2]) != mxDOUBLE_CLASS) {
         mexErrMsgTxt("The processing flag must be passed as a double.");
-    proc_flag = (int)*(double*)mxGetData(prhs[2]);
-    /* invoke & return */
-    func(in, proc_flag);
+    }
+    proc_flag = (int)*(double *)mxGetData(prhs[2]);  // Convert double to int
+    
+    /* Invoke function */
+    func((void*)in, proc_flag);  // Pass the inlet and processing options
 }

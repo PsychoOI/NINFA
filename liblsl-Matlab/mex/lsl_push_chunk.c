@@ -34,10 +34,11 @@ void mexFunction( int nlhs, mxArray *plhs[],
     pTmp = (uintptr_t*)mxGetData(field);
     if (!pTmp)
         mexErrMsgTxt("The field seems to be empty.");    
-    func_num = (lsl_push_sample_dtp_t*)*pTmp;
-    
+    func_num = *(lsl_push_sample_dtp_t**)pTmp;  // Corrected assignment
+
     /* get outlet ptr */
-    out = *(uintptr_t*)mxGetData(prhs[1]);
+    out = (outlet)*(uintptr_t*)mxGetData(prhs[1]);  // Cast correctly to the outlet type
+
 
     /* get ChunkData ptr & check format */
     if (mxGetClassID(prhs[2]) != mxDOUBLE_CLASS)
