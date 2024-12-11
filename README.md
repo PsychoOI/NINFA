@@ -2,6 +2,14 @@
 
 Small Matlab Framework for running Custom Neurofeedback Protocols on LSL Streams
 
+------
+Created by:
+ * Dr. rer. nat. Beatrix Barth
+ * Dipl.-Inf. Clint Banzhaf
+ * M.Sc. Costanza Iester
+ * B.Sc. Ahmed Eldably
+-----
+
 ## Requirements
 
 * Windows 10/11
