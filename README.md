@@ -1,5 +1,7 @@
 # NINFA
 
+
+ 
 Small Matlab Framework for running Custom Neurofeedback Protocols on LSL Streams
 
 ## Requirements
