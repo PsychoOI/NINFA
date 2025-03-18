@@ -7,7 +7,7 @@ end
 
 % REQUIREMENTS FOR PROTOCOL
 function r = requires()
-    r.devicetype = "NIRS";
+    r.devicetype = "ANY";
     % required window min and max durations
     r.window.mins = 1.0;
     r.window.maxs = 10.0;
@@ -28,7 +28,7 @@ function init()
     global Filter
     ordine = 15;
     cutoff = 0.022;
-    Filter = gaussfir(cutoff, ordine);
+    Filter = gaussdesign(cutoff, ordine);
 end
 
 % EXECUTED FOR EACH SLIDING WINDOW

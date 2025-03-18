@@ -3,12 +3,13 @@ classdef devices < handle
     %   Detailed explanation goes here
 
     properties (Constant)
-        types = ["NIRS", "EEG"]
+        types = ["NIRS", "EEG", "test_device"]
     end
     
     properties
         nirs     struct = [];
         eeg      struct = [];
+        test_device struct = [];
         selected struct = struct([]);
     end
     
@@ -40,6 +41,11 @@ classdef devices < handle
                             self.eeg(idx).name = json.name;
                             self.eeg(idx).type = json.type;
                             self.eeg(idx).lsl = json.lsl;
+                        case "test_device"
+                            idx = length(self.test_device) + 1;
+                            self.test_device(idx).name = json.name;
+                            self.test_device(idx).type = json.type;
+                            self.test_device(idx).lsl = json.lsl;
                         otherwise
                             disp("Ignoring unknown device type");
                     end
@@ -61,6 +67,14 @@ classdef devices < handle
                     for d = 1:length(self.eeg)
                         if self.eeg(d).name == name
                             self.selected = self.eeg(d);
+                            r = true;
+                            return
+                        end
+                    end
+                case "test_device"
+                    for d = 1:length(self.test_device)
+                        if self.test_device(d).name == name
+                            self.selected = self.test_device(d);
                             r = true;
                             return
                         end
