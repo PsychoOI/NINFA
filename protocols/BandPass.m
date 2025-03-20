@@ -1,6 +1,42 @@
-function r = BandPass(...
-    marker, nChSS, samplerate, samplenum, ~, ...
-    windownum, window, isfullwindow, prevfeedback)
+function fh = BandPass
+  fh.requires = @requires;
+  fh.init     = @init;
+  fh.process  = @process;
+  fh.finish   = @finish;
+end
+
+% REQUIREMENTS FOR PROTOCOL
+function r = requires()
+    r.devicetype = "NIRS";
+    % required window min and max durations
+    r.window.mins = 1.0;
+    r.window.maxs = 10.0;
+    % requires at least one HbO channel
+    r.channels(1).type = "HbO";
+    r.channels(1).unit = "μmol/L";
+    r.channels(1).min = 1;
+    r.channels(1).max = 64;
+    % HbR is optional
+    r.channels(2).type = "HbR";
+    r.channels(2).unit = "μmol/L";
+    r.channels(2).min = 0;
+    r.channels(2).max = 64;
+end
+
+% EXECUTED ONCE ON START
+function init()
+    global FilterA
+    global FilterB
+    order = 3;
+    cutoff = [0.01 0.08];
+    [FilterB, FilterA]= butter(order, (cutoff*2)/samplerate,'bandpass');
+end
+
+% EXECUTED FOR EACH SLIDING WINDOW
+function r = process(...
+    marker, samplerate, samplenum, data, ...
+    windownum, window, isfullwindow, ...
+    prevfeedback, prevmarker)
 
     % IMPORTANT: 
     %   Your algorithm must take less than (1/samplerate) seconds 
@@ -8,139 +44,148 @@ function r = BandPass(...
     %   If you're algorithm requires more time than that then
     %   run your calculation on every n-th window only and 
     %   repeat your previous feedback for all other windows.
+    global CounterRS
     global DataRS 
     global RestValue
-    global CounterRS
-    global MarkerPrevious
-    global First
-    global Amplitude
+    global Correction
+    global FilterA
+    global FilterB
 
-    nChLS = (size(window,2)/4)-nChSS;
-
-    n    = 1;
-    tick = tic();
-       
-    if marker == 1
-        r = 0.5; % feedback value
-        MarkerPrevious = 1;
-        First = 0;
-
-    elseif marker == 2   % rest condition
-        if MarkerPrevious ~= 2       
-           CounterRS = 0;
-           DataRS  = []; 
-           RestValue = [];
-         end
-        % return 0.5 until first full window
-         if ~isfullwindow
-            r = 0.5;
-            
-            % calculate on every n-th window: Real-Time Preprocessing
-        elseif mod(windownum, n) == 0           
-	
-            DataConc = window(:,(size(window,2)/2)+1:end); % concentration data
-            CounterRS = CounterRS + 1;
-		    % saving the value of the last frame  
-            DataRS(CounterRS,1:nChLS)= DataConc(end,1:nChLS);
-
-            r = 0.5;
-
-            if CounterRS  == floor(samplerate*30)-5
-                if First == 0 % only during the first Rest
-                    First = 1; 
-                    %% Performing the amplitude of the signal - 15 seconds before the start of the experiment
-                    Rest_long = DataRS(floor(samplerate*15):CounterRS,1:nChLS);
-                    % Bandpass Filtering
-                    [b, a] = butter(4,([0.001 0.08]*2)/samplerate,'bandpass');
-                    for s = 1:size(Rest_long,2)                         
-                        Signal_BP(:,s) = filter(b,a,Rest_long(:,s));
-                    end
-                    Signal_avg = mean(Signal_BP,2);
-                    % sort data 
-                    SortVector = sort( Signal_avg);
-                    % the amplitude is the difference between the largest and the smallest
-                    % value. The max is performed as the mean of the 25 largest samples and the
-                    % min as the mean of the 25 smallest samples. (Ten samples were discarded
-                    % above and at the bottom).
-                    if mean(SortVector(end-35:end-10))>0 && mean(SortVector(10:35))<0
-                        Amplitude = abs(mean(SortVector(end-35:end-10))-mean(SortVector(10:35)));
-                    else
-                        Amplitude = abs(abs(mean(SortVector(end-35:end-10)))-abs(mean(SortVector(10:35))));
-                    end
-                end 
-                
-                
-                disp('Rest Average')
-                DataFilt = DataRS(floor(samplerate*25):CounterRS,1:nChLS);             
-                disp(size(DataFilt))
-                
-                % Band-pass filtering
-                 [b, a] = butter(4,([0.001 0.08]*2)/samplerate,'bandpass');       
-                for s = 1:size(DataFilt,2)               
-                    DataFilt_BP(:,s) = filter(b, a, DataFilt(:,s));
-                end
-
-                RestValue(1,1) = mean(mean(DataFilt_BP,2)); 
-                
-                disp(RestValue)
-   
-                r = 0.5;
-                
-            end
-        MarkerPrevious = marker;
-        
-        else
-            MarkerPrevious = marker;
-            r = prevfeedback;
-        end
-        
-    else
-
-         MarkerPrevious = marker;
-
-        % return 0.5 until first full window
-        if ~isfullwindow
-            r = 0.5; 
-            
-            % calculate on every n-th window: Real-Time Preprocessing
-        elseif mod(windownum, n) == 0
-            
-            DataConc = window(:,(size(window,2)/2)+1:end); % concentration data  
-            size(DataConc)            
-            DataConcHbO = DataConc(:,1:nChLS); % HbO LS channels             
+    % CONSTANTS
+    EXPECTED_AMPLITUDE =  0.1;
+    EXPECTED_MIN_DIFF  = -0.4;
+    EXPECTED_MAX_DIFF  =  0.4;
     
-            [b, a] = butter(4,([0.001 0.08])*2/samplerate,'bandpass');        
-            for s = 1:size(DataConcHbO,2)               
-                DataFilt(:,s) = filter(b, a, DataConcHbO(:,s));
-            end
-            
-            saveY = mean(mean(DataFilt,1)); % Remove the inner mean
-
-            % Feedback
-            feedback = (saveY - RestValue(1,1));
-            Parameter = 0.1; % rescaling with respect to Rest. 0.1 is the amplitude that I want on rest, if it is not, then I rescaled.
-            feedback1 = (feedback*Parameter)/Amplitude;
-            feedback_N = (((feedback1 + 0.35) * (1))/ (0.7));
-             % y= ( ((X-a)x(d-c)) / (b-a) )  + c 
-                % ( a , b ) = initial interval --> (-0.4, 0.4) 
-                % ( c , d ) = final interval --> (0 , 1) 
-            
-            disp(saveY)
-            
-            r = feedback_N;            
-             
-            % skip this sample/window
-        else
-            r = prevfeedback;
+    r    = 0.5;   % default return
+    tick = tic(); % start time of execution
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    if marker == 2
+        %% RESTING PHASE
+        
+        % reset on switch
+        if prevmarker ~= 2
+           CounterRS = 0;
+           DataRS = [];
         end
 
+        % saving the HbO values of the last sample   
+        CounterRS = CounterRS + 1;
+        DataRS(CounterRS,:) = window.HbO(end,:);
+        %disp(CounterRS)
+
+        % 5 frames before 30 seconds of rest (to avoid final delays)
+        if CounterRS == floor(samplerate*30)-5
+            %% CALCULATE CORRECTION FACTOR USING AMPLITUDE
+            % (1) Extract last ~15s of HbO channels of resting phase
+            % (2) Filter each HbO channel
+            % (3) Create average HbO channel from all filtered HbO channels
+            % (4) Sort average HbO channel
+            % (5) Calculate amplitude using mean of highest and lowest
+            filtered = DataRS(floor(samplerate*15):end,:);
+            for ch = 1:size(filtered,2) 
+                filtered(:,ch) = filter(FilterB, FilterA,  filtered(:,ch));
+            end
+            mean_hbo   = mean(filtered,2);
+            mean_hbo   = sort(mean_hbo);
+            mean_top25 = mean(mean_hbo(end-35:end-10));
+            mean_low25 = mean(mean_hbo(10:35));
+            amplitude  = abs(mean_top25 - mean_low25);
+            Correction = EXPECTED_AMPLITUDE / amplitude;
+            %disp("Amplitude:  " + sprintf('%.3f', amplitude));
+            %disp("Correction: " + sprintf('%.3f', Correction));
+
+            %% AVERAGE OF HBO OF LAST ~5S OF RESTING PHASE
+            DataFilt = DataRS(floor(samplerate*25):end,:);
+            for ch = 1:size(DataFilt,2) 
+                DataFilt(:,ch) = filter(FilterB, FilterA,  DataFilt(:,ch)); 
+            end
+            RestValue = mean(mean(DataFilt,2));
+            %disp("Rest Average: " + sprintf('%.3f', RestValue));
+        end
+
+    elseif marker == 3
+        %% CONCENTRATION PHASE
+
+        % filter each HbO channel in current sliding window
+        for ch = 1:size(window.HbO,2)
+            DataFilt(:,ch) = filter(FilterB, FilterA,  window.HbO(:,ch));            
+        end
+
+        % calculate mean HbO channel and mean HbO over time
+        mean_hbo = mean(mean(DataFilt,1));
+
+        % feedback is difference in HbO scaled by correction
+        feedback = mean_hbo - RestValue;
+        feedback = feedback * Correction;
+        
+        % convert from expected range to [0,1] using
+        % r = (((X-a)*(d-c)) / (b-a)) + c 
+        % (a, b) = initial interval 
+        % (c, d) = final interval
+        r = (((feedback-EXPECTED_MIN_DIFF)*(1.0-0.0)) / ...
+            (EXPECTED_MAX_DIFF-EXPECTED_MIN_DIFF)) + 0.0;
     end
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     % time spent
     span = toc(tick);
     
-    % debug
-    disp("Processed sample " + samplenum + ...
-        " (window=" + windownum + ...
-        ", marker=" + marker + ...
-        ", duration=" + sprintf('%.3f', span) + "s):");
+    % create debug output
+    output = ...
+        "| sample="   + sprintf('%05d', samplenum) + " " + ...
+        "| window="   + sprintf('%05d', windownum) + " " + ...
+        "| marker="   + sprintf('%02d', marker)    + " " + ...
+        "| duration=" + sprintf('%.3f', span)+"s"  + " " + ...
+        "| feedback=" + sprintf('%.3f', r)         + " ";
+    
+    % add values for marker=3
+    if marker == 3
+        output = output + ...
+            "| restavg="    + sprintf('%.3f', RestValue)  + " " + ...
+            "| wndavg="     + sprintf('%.3f', mean_hbo)   + " " + ...
+            "| correction=" + sprintf('%.3f', Correction) + " ";
+    end
+    
+    % show debug output
+    disp(output + "|");
+end
+
+% EXECUTED AT THE END OF THE SESSION
+function finish(session)
+    ploth = figure('Name', 'Session Plot');
+    ploth.NumberTitle = 'off';
+    
+    nplot  = 1; % Current one
+    nplots = 3; % HbO, Feedback, Marker
+    if isfield(session.data, "HbR")
+        nplots = 4; % + HbR
+    end
+    
+    % Plotting unfiltered HbO mean channel
+    subplot(nplots,1,nplot);
+    plot(mean(session.data.HbO,2),'r');
+    title('HbO [μmol/L]');
+    
+    % Plotting unfiltered HbR mean channel (optional)
+    if isfield(session.data, "HbR")
+        nplot  = nplot + 1;
+        subplot(nplots,1,nplot);
+        plot(mean(session.data.HbR,2),'b');
+        title('HbR [μmol/L]');
+    end
+
+    % Plotting Feedback values
+    nplot = nplot + 1;
+    subplot(nplots,1,nplot);
+    plot(session.feedback(:,1));
+    title('Feedback');
+    
+    % Plotting Marker Values
+    nplot = nplot + 1;
+    subplot(nplots,1,nplot);
+    plot(session.markers(:,1));
+    title('Marker');
 end
