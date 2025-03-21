@@ -14,10 +14,12 @@ classdef lsl < handle
         sratenom    double = 0.0;        % device claimed sample rate
         srate       double = 0.0;        % measured sample rate
         channels    uint32 = [];         % channel numbers to use
+        SSchannels    uint32 = [];         % channel numbers to use
         streaming   logical = 0;         % true if open() was successful
         tick        uint64 = 0;          % start tick of streaming
         nsamples    double = 0.0;        % received samples since tick
         sample      double = zeros(0);   % last sample
+        SSsample      double = zeros(0);   % last sample
         timestamp   double = 0.0;        % last sample timestamp
         outtrigger  lsl_outlet;          % outlet for trigger
         outmarker   lsl_outlet;          % outlet for marker
@@ -40,7 +42,8 @@ classdef lsl < handle
             end
         end
 
-        function reset(self, rows, channels)
+        function reset(self, rows, channels, SSchannels)
+            global myprotocols;
             cols = length(channels);
             rows = ceil(rows);
             if rows == 0, error("Rows can't be zero"); end
@@ -55,6 +58,25 @@ classdef lsl < handle
             self.sample = zeros(1, cols);
             self.timestamp = 0;
             self.marker = 0;
+            req = myprotocols.selected.fh.requires();
+            if isfield(req, 'SSchannels')
+                cols = length(SSchannels);
+                rows = ceil(rows);
+                if rows == 0, error("Rows can't be zero"); end
+                if cols == 0, error("Short Channels can't be empty"); end
+                for ch = SSchannels
+                    if ch <= 0 || ch > self.lslchannels
+                        error("Requested invalid channel " ...
+                            + ch + " of " + self.lslchannels);
+                    end
+                end
+                self.SSchannels = SSchannels;
+                self.SSsample = zeros(1, cols);
+            else
+                self.SSchannels = [];
+                self.SSsample = zeros(1, 0);
+            end
+            
         end
         
         function r = open(self, type)
@@ -104,6 +126,11 @@ classdef lsl < handle
                     self.nsamples = self.nsamples + 1;
                     for ch = self.channels
                         self.sample(idx) = vec(ch);
+                        idx = idx + 1;
+                    end
+                    idx = 1;
+                    for ch = self.SSchannels
+                        self.SSsample(idx) = vec(ch);
                         idx = idx + 1;
                     end
                     notify(self, 'NewSample');
