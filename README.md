@@ -21,7 +21,7 @@ A Matlab Framework for running Custom Neurofeedback Protocols via Lab Streaming 
 4. Configure `SETTINGS`, `ID` and `EPOCHS`
 5. Click `START` to run a session
 
-![Image](https://github.com/user-attachments/assets/70798bc9-f78c-493b-b48d-928080ea41b7)
+![Image](https://github.com/user-attachments/assets/22cf33bc-c605-4228-8822-c8f9a9878e3b)
 
 ### DEVICE
  
