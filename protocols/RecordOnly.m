@@ -18,7 +18,7 @@ function init()
 end
 
 % EXECUTED FOR EACH SLIDING WINDOW
-function r = process(~, ~, ~, ~, ~, ~, ~, ~, ~)
+function r = process(~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~)
     r = 0.0;
 end
 

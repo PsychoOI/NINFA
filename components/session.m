@@ -16,13 +16,16 @@ classdef session < handle
         srate       double  = 0.0;        % sample rate
         device      struct  = struct();   % device used in session
         channels    uint32  = [];         % channel numbers
+        SSchannels    uint32  = [];         % channel numbers
         fn          cell    = [];         % field names in data and window
         data        struct  = struct();   % session data
+        SSdata        struct  = struct();   % session data
         datasize    uint32  = 0;          % rows count in data
         times       double  = zeros(0);   % timestamps of sesssion data
         idx         uint32  = 0;          % current index in data and times
         firsttime   double  = 0.0;        % first time       
         window      struct  = struct();   % current window
+        SSwindow      struct  = struct();   % current window
         windowsize  uint32  = 0;          % rows count in window
         windowtimes double  = zeros(0);   % current window times
         windowidx   uint32  = 0;          % current index in window
@@ -63,9 +66,26 @@ classdef session < handle
             end
         end
         
+        %% Return Channel Counts for each Type
+        function r = countSSChannelTypes(self)
+            r = struct();
+            lslchannels = self.device.lsl.channels;
+            numlslchannels = length(lslchannels);
+            for ch = self.SSchannels
+                type = "unknown";
+                if ch <= numlslchannels
+                    type = lslchannels(ch).type;
+                end
+                if ~isfield(r, type)
+                    r.(type) = 0;
+                end
+                r.(type) = r.(type) + 1;
+            end
+        end
+
         %% Start a new session
         function r = start(self, protocol, lengthmax, window, srate, ...
-                           device, channels, markerinfo, study, subject, run)
+                           device, channels, SSchannels, markerinfo, study, subject, run)
             if self.running
                 r = false;
                 return;
@@ -81,14 +101,25 @@ classdef session < handle
             self.srate = srate;
             self.device = device;
             self.channels = channels;
+            self.SSchannels = SSchannels;
             counts = self.countChannelTypes();
+            SScounts = self.countSSChannelTypes();
             self.data = struct();
+            self.SSdata = struct();
             self.window = struct();
+            self.SSwindow = struct();
             self.fn = fieldnames(counts);
-            for k = 1:numel(self.fn)
+            for k = 1:numel(self.fn) % Type? 
                 self.data.(self.fn{k}) = zeros(self.datasize, counts.(self.fn{k}));
                 self.window.(self.fn{k}) = zeros(self.windowsize, counts.(self.fn{k}));
             end
+
+            self.fn = fieldnames(SScounts);
+            for k = 1:numel(self.fn) % Type? 
+                self.SSdata.(self.fn{k}) = zeros(self.datasize, SScounts.(self.fn{k}));
+                self.SSwindow.(self.fn{k}) = zeros(self.windowsize, SScounts.(self.fn{k}));
+            end
+
             self.times = zeros(self.datasize, 1);
             self.feedback = zeros(self.datasize, 1);
             self.idx = 0;           
@@ -168,7 +199,7 @@ classdef session < handle
 
         
         %% Push a new sample to running session
-        function pushSample(self, sample, ts)
+        function pushSample(self, sample, SSsample, ts)
             %% do nothing if not running
             if ~self.running
                 return;
@@ -187,6 +218,8 @@ classdef session < handle
                 for k = 1:numel(self.fn)
                     self.window.(self.fn{k}) = ...
                         circshift(self.window.(self.fn{k}), -1);
+                    self.SSwindow.(self.fn{k}) = ...
+                        circshift(self.SSwindow.(self.fn{k}), -1);
                 end
                 self.windowtimes = circshift(self.windowtimes, -1);
             end
@@ -195,6 +228,7 @@ classdef session < handle
             self.markers(self.idx,:) = self.marker;
             %% add new sample to data and window
             colidx = struct();
+            SScolidx = struct();
             lslchannels = self.device.lsl.channels;
             numlslchannels = length(lslchannels);
             for i = 1:length(self.channels)
@@ -211,6 +245,23 @@ classdef session < handle
                 self.window.(type)(self.windowidx, colidx.(type)) = val;
                 colidx.(type) = colidx.(type) + 1;
             end
+
+            for i = 1:length(self.SSchannels)
+                type = "unknown";
+                val = SSsample(i);
+                ch = self.SSchannels(i);
+                if ch <= numlslchannels
+                    type = lslchannels(ch).type;
+                end
+                if ~isfield(SScolidx, type)
+                    SScolidx.(type) = 1;
+                end
+                self.SSdata.(type)(self.idx, SScolidx.(type)) = val;
+                self.SSwindow.(type)(self.windowidx, SScolidx.(type)) = val;
+                SScolidx.(type) = SScolidx.(type) + 1;
+            end
+
+
             %% raise window event
             notify(self, "Window");
             if self.windowidx >= self.windowsize
@@ -244,13 +295,17 @@ classdef session < handle
             export.protocol = self.protocol;
             export.samplerate = self.srate;
             export.channels = self.channels;
+            export.SSchannels = self.SSchannels;
             export.starttime = datetime(self.starttime,'ConvertFrom','datenum');
             export.stoptime = datetime(self.stoptime,'ConvertFrom','datenum');
             export.duration = self.length;
             export.windowsamples = self.windowsize;
             % data
-            for k = 1:numel(self.fn)
+             for k = 1:numel(self.fn)
                 export.data.(self.fn{k}) = self.data.(self.fn{k})(1:usedrows,:);
+            end
+            for k = 1:numel(self.fn)
+                export.SSdata.(self.fn{k}) = self.SSdata.(self.fn{k})(1:usedrows,:);
             end
             export.times = self.times(1:usedrows,:);
             export.feedback = self.feedback(1:usedrows,:);

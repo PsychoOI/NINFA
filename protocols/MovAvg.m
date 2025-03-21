@@ -1,4 +1,4 @@
-function fh = BandPass
+function fh = MovAvg
   fh.requires = @requires;
   fh.init     = @init;
   fh.process  = @process;
@@ -25,13 +25,10 @@ end
 
 % EXECUTED ONCE ON START
 function init()
-    global FilterA
-    global FilterB
-    global mysession
-    order = 3;
-    cutoff = [0.01 0.5];
-    samplerate = mysession.srate;
-    [FilterB, FilterA]= butter(order, (cutoff*2)/samplerate,'bandpass');
+    global Filter
+    ordine = 15;
+    cutoff = 0.022;
+    Filter = gaussfir(cutoff, ordine);
 end
 
 % EXECUTED FOR EACH SLIDING WINDOW
@@ -40,7 +37,7 @@ function r = process(...
     windownum, window, SSwindow, isfullwindow, ...
     prevfeedback, prevmarker)
 
-    % IMPORTANT: 
+    % IMPORTANT:   
     %   Your algorithm must take less than (1/samplerate) seconds 
     %   in average or else you fall behind schedule and get a drift.
     %   If you're algorithm requires more time than that then
@@ -50,8 +47,7 @@ function r = process(...
     global DataRS 
     global RestValue
     global Correction
-    global FilterA
-    global FilterB
+%     global Filter
 
     % CONSTANTS
     EXPECTED_AMPLITUDE =  0.1;
@@ -75,6 +71,7 @@ function r = process(...
         % saving the HbO values of the last sample   
         CounterRS = CounterRS + 1;
         DataRS(CounterRS,:) = window.HbO(end,:);
+        %disp(CounterRS)
 
         % 5 frames before 30 seconds of rest (to avoid final delays)
         if CounterRS == floor(samplerate*30)-5
@@ -84,11 +81,11 @@ function r = process(...
             % (3) Create average HbO channel from all filtered HbO channels
             % (4) Sort average HbO channel
             % (5) Calculate amplitude using mean of highest and lowest
-            filtered = DataRS(floor(samplerate*15):end,:);
-            for ch = 1:size(filtered,2) 
-                filtered(:,ch) = filter(FilterB, FilterA,  filtered(:,ch));
-            end
-            mean_hbo   = mean(filtered,2);
+            Nofiltered = DataRS(floor(samplerate*15):end,:);
+%             for ch = 1:size(Nofiltered,2) 
+%                 Nofiltered(:,ch) = conv(Nofiltered(:,ch), Filter, 'same'); 
+%             end
+            mean_hbo   = mean(Nofiltered,2);
             mean_hbo   = sort(mean_hbo);
             mean_top25 = mean(mean_hbo(end-35:end-10));
             mean_low25 = mean(mean_hbo(10:35));
@@ -98,11 +95,11 @@ function r = process(...
             %disp("Correction: " + sprintf('%.3f', Correction));
 
             %% AVERAGE OF HBO OF LAST ~5S OF RESTING PHASE
-            DataFilt = DataRS(floor(samplerate*25):end,:);
-            for ch = 1:size(DataFilt,2) 
-                DataFilt(:,ch) = filter(FilterB, FilterA,  DataFilt(:,ch)); 
-            end
-            RestValue = mean(mean(DataFilt,2));
+            DataNoFilt = DataRS(floor(samplerate*25):end,:);
+%             for ch = 1:size(DataNoFilt,2) 
+%                 DataNoFilt(:,ch) = conv(DataNoFilt(:,ch), Filter, 'same'); 
+%             end
+            RestValue = mean(mean(DataNoFilt,2));
             %disp("Rest Average: " + sprintf('%.3f', RestValue));
         end
 
@@ -110,12 +107,12 @@ function r = process(...
         %% CONCENTRATION PHASE
 
         % filter each HbO channel in current sliding window
-        for ch = 1:size(window.HbO,2)
-            DataFilt(:,ch) = filter(FilterB, FilterA,  window.HbO(:,ch));            
-        end
+%         for ch = 1:size(window.HbO,2)
+%             DataNoFilt(:,ch) = conv(window.HbO(:,ch), Filter, 'same'); 
+%         end
 
         % calculate mean HbO channel and mean HbO over time
-        mean_hbo = mean(mean(DataFilt,1));
+        mean_hbo = mean(mean(window.HbO,1));
 
         % feedback is difference in HbO scaled by correction
         feedback = mean_hbo - RestValue;
