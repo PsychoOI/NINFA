@@ -1,4 +1,4 @@
-function fh = Gauss
+function fh = MovAvg_SS
   fh.requires = @requires;
   fh.init     = @init;
   fh.process  = @process;
@@ -7,11 +7,16 @@ end
 
 % REQUIREMENTS FOR PROTOCOL
 function r = requires()
-    r.devicetype = "ANY";
+    r.devicetype = "NIRS";
     % required window min and max durations
     r.window.mins = 1.0;
     r.window.maxs = 10.0;
     % requires at least one HbO channel
+    r.SSchannels(1).type = "HbO";
+    r.SSchannels(1).unit = "μmol/L";
+    r.SSchannels(1).min = 1; % at least one
+    r.SSchannels(1).max = 64;
+
     r.channels(1).type = "HbO";
     r.channels(1).unit = "μmol/L";
     r.channels(1).min = 1;
@@ -25,16 +30,16 @@ end
 
 % EXECUTED ONCE ON START
 function init()
-    global Filter
-    ordine = 15;
-    cutoff = 0.022;
-    Filter = gaussdesign(cutoff, ordine);
+%     global Filter
+%     ordine = 15;
+%     cutoff = 0.022;
+%     Filter = gaussfir(cutoff, ordine);
 end
 
 % EXECUTED FOR EACH SLIDING WINDOW
 function r = process(...
-    marker, samplerate, samplenum, data, ...
-    windownum, window, isfullwindow, ...
+    marker, samplerate, samplenum, data, SSdata, ...
+    windownum, window, SSwindow, isfullwindow, ...
     prevfeedback, prevmarker)
 
     % IMPORTANT: 
@@ -45,9 +50,10 @@ function r = process(...
     %   repeat your previous feedback for all other windows.
     global CounterRS
     global DataRS 
+    global SSDataRS
     global RestValue
     global Correction
-    global Filter
+%     global Filter
 
     % CONSTANTS
     EXPECTED_AMPLITUDE =  0.1;
@@ -66,11 +72,13 @@ function r = process(...
         if prevmarker ~= 2
            CounterRS = 0;
            DataRS = [];
+           SSDataRS = [];
         end
 
         % saving the HbO values of the last sample   
         CounterRS = CounterRS + 1;
         DataRS(CounterRS,:) = window.HbO(end,:);
+        SSDataRS(CounterRS,:) = SSwindow.HbO(end,:);
         %disp(CounterRS)
 
         % 5 frames before 30 seconds of rest (to avoid final delays)
@@ -81,10 +89,16 @@ function r = process(...
             % (3) Create average HbO channel from all filtered HbO channels
             % (4) Sort average HbO channel
             % (5) Calculate amplitude using mean of highest and lowest
+
+            % SS Regression 
+            filtered_SS = mean(SSDataRS(floor(samplerate*15):end,:),2);
             filtered = DataRS(floor(samplerate*15):end,:);
+            
             for ch = 1:size(filtered,2) 
-                filtered(:,ch) = conv(filtered(:,ch), Filter, 'same'); 
-            end
+                alpha = dot(filtered_SS, filtered(:,ch)) / dot(filtered_SS, filtered_SS);            
+                filtered(:,ch) = filtered(:,ch) - alpha * filtered_SS;
+            end            
+           
             mean_hbo   = mean(filtered,2);
             mean_hbo   = sort(mean_hbo);
             mean_top25 = mean(mean_hbo(end-35:end-10));
@@ -95,21 +109,28 @@ function r = process(...
             %disp("Correction: " + sprintf('%.3f', Correction));
 
             %% AVERAGE OF HBO OF LAST ~5S OF RESTING PHASE
+            % regression
+            SSDataFilt = mean(SSDataRS(floor(samplerate*25):end,:),2);
             DataFilt = DataRS(floor(samplerate*25):end,:);
+            
             for ch = 1:size(DataFilt,2) 
-                DataFilt(:,ch) = conv(DataFilt(:,ch), Filter, 'same'); 
-            end
+                alpha = dot(SSDataFilt, DataFilt(:,ch)) / dot(SSDataFilt, SSDataFilt);            
+                DataFilt(:,ch) = DataFilt(:,ch) - alpha * SSDataFilt;
+            end 
             RestValue = mean(mean(DataFilt,2));
             %disp("Rest Average: " + sprintf('%.3f', RestValue));
         end
 
     elseif marker == 3
         %% CONCENTRATION PHASE
-
-        % filter each HbO channel in current sliding window
-        for ch = 1:size(window.HbO,2)
-            DataFilt(:,ch) = conv(window.HbO(:,ch), Filter, 'same'); 
-        end
+        
+        % SS Regression 
+        filtered_SS = mean(SSwindow.HbO,2);
+        
+        for ch = 1:size(window.HbO,2) 
+            alpha = dot(filtered_SS, window.HbO(:,ch)) / dot(filtered_SS, filtered_SS);            
+            DataFilt(:,ch) = window.HbO(:,ch) - alpha * filtered_SS;
+        end         
 
         % calculate mean HbO channel and mean HbO over time
         mean_hbo = mean(mean(DataFilt,1));

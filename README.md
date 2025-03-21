@@ -2,12 +2,11 @@
 
 
  
-Small Matlab Framework for running Custom Neurofeedback Protocols on LSL Streams
+A Matlab Framework for running Custom Neurofeedback Protocols via Lab Streaming Layer (LSL) Streams
 
 ## Requirements
-
-* Windows 10/11
-* Matlab 2020a
+* [liblsl-Matlab](https://github.com/labstreaminglayer/liblsl-Matlab/) -> Installation guide is available here.
+* Matlab 2023b
 
 ## Starting
 
@@ -22,13 +21,13 @@ Small Matlab Framework for running Custom Neurofeedback Protocols on LSL Streams
 4. Configure `SETTINGS`, `ID` and `EPOCHS`
 5. Click `START` to run a session
 
-![ninfa](https://github.com/user-attachments/assets/7f8ba7ad-ea09-4d08-8384-57f182961430)
+![Image](https://github.com/user-attachments/assets/22cf33bc-c605-4228-8822-c8f9a9878e3b)
 
 ### DEVICE
-
+ 
 * Select your device type and model from the available options.
 * Add a device by creating a `.json` file for it in subfolder `devices`
-  * Take a look at the existing `nirs_nirx_nirsport2.json`
+  * Take a look at the existing `nirs_nirx_nirsport2_26.json`
   * The most important part is defining the LSL channels sent by the device
 
 ### LSL STREAM
@@ -98,14 +97,15 @@ An epoch is a configurable timespan within a session.
 
 * A protocol calculates a feedback value from an input window
 * To add a protocol put the Matlab file in subfolder `protocols`
-* The `Gauss.m` example requires a NIRS device that sends at least one `HbO` channel with `μmol/L` unit
+* The `MovAvg_SS.m` example requires a NIRS device that sends at least one `HbO` channel with `μmol/L` unit and one short channel selected.
 * The `RecordOnly.m` works with any device type and model and just records data
- 
-## Drift and Execution Times
+* The `BanPass.m` example requires a NIRS device that sends at least one `HbO` channel with `μmol/L` unit without short channels selection.
+* The `MovAvg.m` example requires a NIRS device that sends at least one `HbO` channel with `μmol/L` unit without short channels selection.
 
-* `DRIFT` shows current offset in playback schedule (`where we are` vs. `where we should be`)
+## Delay and Execution Times
+
+* `DELAY` shows current offset in playback schedule (`where we are` vs. `where we should be`)
 * It typically occurs if the average runtime of your protocol is larger than `1s/samplerate`
-* If your protocol requires more time then skip some windows and repeat the previous feedback for them (see `example1.m`)
 
 ## Feedback Window
 
