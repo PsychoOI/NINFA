@@ -31,16 +31,13 @@ classdef feedback < handle
                 feedback.figwidth, ... 
                 feedback.figheight];
 
-            % create axes in the figure
-            self.hAxes = axes(self.hFig); % Create axes as a child of the figure
-            
             % create red bar
-            self.hBarRed = bar(self.hAxes, 0);
+            self.hBarRed = bar(self.hFig);
             self.hBarRed.FaceColor = [0.8500 0.3250 0.0980];
             hold on;
 
             % create blue bar
-            self.hBarBlue = bar(self.hAxes, 0);
+            self.hBarBlue = bar(self.hFig);
             self.hBarBlue.FaceColor = [0 0.4470 0.7410];
             hold off;
 
@@ -126,3 +123,4 @@ classdef feedback < handle
 
     end
 end
+

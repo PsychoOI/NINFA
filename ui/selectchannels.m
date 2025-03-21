@@ -32,7 +32,9 @@ classdef selectchannels < handle
         hStyleOk       matlab.ui.style.Style;
         hStyleNotOk    matlab.ui.style.Style; 
         selected       uint32  = [];
+        SSselected          uint32  = [];
         isok           logical = false;
+        SSisok         logical = false;
     end
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -84,7 +86,8 @@ classdef selectchannels < handle
                     if isvalid(self.hRequired)
                         self.hRequired.Data(idxreq, 3) = found;
                         addStyle(self.hRequired, ...
-                            self.hStyleNotOk, 'cell', [idxreq 3]);
+                        self.hStyleNotOk, 'cell', [idxreq 3]);
+                        self.SSisok = true;
                     end
                 else
                     if isvalid(self.hRequired)
@@ -97,23 +100,64 @@ classdef selectchannels < handle
             if isvalid(self.hChannelsPanel)
                 self.hChannelsPanel.Title = "SELECTED: " + ...
                     length(self.selected);
+                  %% SS
+                  req = myprotocols.selected.fh.requires();
+                  if ~isfield(req, 'SSchannels')
+                        req.SSchannels = [];
+                  end
+                 SSchreq = req.SSchannels;
+                 self.SSisok = ~isempty(self.SSselected);
+                 for idxreq = 1:length(SSchreq)
+                     found = 0;
+                     for idxlsl = [self.SSselected]
+                         if SSchreq(idxreq).type == chlsl(idxlsl).type && ...
+                            SSchreq(idxreq).unit == chlsl(idxlsl).unit
+                             found = found + 1;
+                         end
+                      end
+                      min = SSchreq(idxreq).min;
+                      max = SSchreq(idxreq).max;
+                      if found < min || found > max
+                         self.SSisok = false;
+                         if isvalid(self.hRequired)
+                            self.hRequired.Data(idxreq, 8) = found;
+                            addStyle(self.hRequired, ...
+                            self.hStyleNotOk, 'cell', [idxreq 8]);
+                        end
+                      else
+                         if isvalid(self.hRequired)
+                            self.hRequired.Data(idxreq, 8) = found;
+                            addStyle(self.hRequired, ...
+                            self.hStyleOk, 'cell', [idxreq 8]);
+                        end
+                     end
+                end
             end
-            if isvalid(self.hButton)
-                self.hButton.Enable = self.isok;
+            if isvalid(self.hChannelsPanel)
+                 self.hChannelsPanel.Title = "SELECTED: " + ...
+                     "NF = " + length(self.selected) + "  SS = " + length(self.SSselected);
             end
         end
         
         % executed when checkbox is changed
         function onSelectedChanged(self, ~, ~)
             newselected = [];
+            newSSelected = [];
             for idx = 1:size(self.hChannels.Data, 1)
                 row = self.hChannels.Data(idx,:);
+                % Checking the first column
                 if row(1) == "1"
                     lslidx = str2double(row(2));
                     newselected(end+1) = lslidx;
                 end
+                % Checking the sisth column
+                if row(6) == "1"
+                    lslidx = str2double(row(2));
+                    newSSelected(end+1) = lslidx;
+                end
             end
             self.selected = newselected;
+            self.SSselected = newSSelected;
         end
 
         % executed on OK button
@@ -135,6 +179,15 @@ classdef selectchannels < handle
             self.updateOK();
         end
         
+        function r = get.SSselected(self)
+            r = self.SSselected;
+        end
+        
+        function set.SSselected(self,val)
+            self.SSselected = val;
+            self.updateOK(); % non faccio il controllo su SS
+        end
+
         function show(self)
             % window already open
             if isvalid(self.hFig)
@@ -152,6 +205,7 @@ classdef selectchannels < handle
             self.hFig.MenuBar     = 'none';
             self.hFig.Units       = 'pixels';
             self.hFig.NumberTitle = 'off';
+            self.updateOK();
             self.hFig.Position    = [0, 0, ...
                 selectchannels.figwidth, ... 
                 selectchannels.figheight];
@@ -179,30 +233,28 @@ classdef selectchannels < handle
                 selectchannels.panelwidth, ...
                 selectchannels.panelheightchannels
             ];
-
             % create required table
-            self.hRequired = uitable(self.hRequiredPanel);
-            self.hRequired.ColumnName = {'MIN'; 'MAX'; 'SEL'; 'TYPE'; 'UNIT'};
-            self.hRequired.ColumnWidth = {50, 50, 45, 'auto', 100};
-            self.hRequired.ColumnFormat = { 
-                'short', 'short', 'short', 'char', 'char' };
-            self.hRequired.RowName = {};
-            self.hRequired.ColumnEditable = [false false false false false];
-            self.hRequired.Position = [...
-                selectchannels.padding, ...
-                selectchannels.padding, ...
-                selectchannels.tablewidth, ...
-                selectchannels.tableheightrequired];
-            self.hRequired.SelectionType = 'cell';
+             self.hRequired = uitable(self.hRequiredPanel);
+             self.hRequired.ColumnName = {'MIN_NF'; 'MAX_NF'; 'SEL_NF'; 'TYPE'; 'UNIT';'MIN_SS';'MAX_SS';'SEL_SS'};
+             self.hRequired.ColumnWidth = {'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'};
+             self.hRequired.ColumnFormat = {'short', 'short', 'short', 'char', 'char' ,'short', 'short' ,'short'};
+             self.hRequired.RowName = {};
+             self.hRequired.ColumnEditable = [false false false false false false false false];
+             self.hRequired.Position = [...
+                 selectchannels.padding, ...
+                 selectchannels.padding, ...
+                 selectchannels.tablewidth, ...
+                 selectchannels.tableheightrequired];
+             self.hRequired.SelectionType = 'cell';
 
             % create channels table
             self.hChannels = uitable(self.hChannelsPanel);
-            self.hChannels.ColumnName = {''; 'LSL CH'; 'DEV CH'; 'TYPE'; 'UNIT'};
-            self.hChannels.ColumnWidth = {25, 60, 60, 'auto', 100};
+            self.hChannels.ColumnName = {'NF'; 'LSL CH'; 'DEV CH'; 'TYPE'; 'UNIT';'SS'};
+            self.hChannels.ColumnWidth = {35, 60, 60, 'auto', 100, 35};
             self.hChannels.ColumnFormat = { 
-                'logical', 'short', 'short', 'char', 'char' };
+                'logical','short', 'short', 'char', 'char' , 'logical'};
             self.hChannels.RowName = {};
-            self.hChannels.ColumnEditable = [true false false false false];
+            self.hChannels.ColumnEditable = [true  false false false false true];
             self.hChannels.Position = [...
                 selectchannels.padding, ...
                 selectchannels.padding, ...
@@ -252,23 +304,43 @@ classdef selectchannels < handle
             end
         end
         
-        function initRequired(self)
-            if isempty(self.hFig) || ~isvalid(self.hFig)
-                return
-            end
-            global myprotocols;
-            req = myprotocols.selected.fh.requires();
-            self.hRequired.Data = strings([0,5]);
-            for idx = 1:length(req.channels)
-                self.hRequired.Data(idx,:) = [
-                    req.channels(idx).min, ...
-                    req.channels(idx).max, ...
-                    0, ...
-                    req.channels(idx).type, ...
-                    req.channels(idx).unit
-                ];
-            end
-        end
+         function initRequired(self)
+             if isempty(self.hFig) || ~isvalid(self.hFig)
+                 return
+             end
+             global myprotocols;
+             req = myprotocols.selected.fh.requires();
+             self.hRequired.Data = strings([0,8]);
+             for idx = 1:length(req.channels)
+                  % Check if SSchannels exist
+                  if ~isfield(req, 'SSchannels') || isempty(req.SSchannels)
+                        minSSchannels = 0;
+                        maxSSchannels = 0;
+                  else
+                        % Ensure idx does not exceed the length of SSchannels
+                        if idx <= length(req.SSchannels)
+                            minSSchannels = req.SSchannels(idx).min;
+                            maxSSchannels = req.SSchannels(idx).max;
+                        else
+                            % If idx exceeds, assign default values
+                            minSSchannels = 0;
+                            maxSSchannels = 0;
+                        end
+                  end
+
+                 % Fill in the data for the current channel
+                 self.hRequired.Data(idx,:) = [
+                     req.channels(idx).min, ...
+                     req.channels(idx).max, ...
+                     0, ...
+                     req.channels(idx).type, ...
+                     req.channels(idx).unit, ...
+                     minSSchannels, ...
+                     maxSSchannels, ...
+                     0, ...
+                 ];
+             end
+          end
 
         function initSelected(self)
             if isempty(self.hFig) || ~isvalid(self.hFig)
@@ -278,10 +350,12 @@ classdef selectchannels < handle
             global mydevices;
             tblidx = 1;
             lenreqs = size(self.hRequired.Data, 1);
-            self.hChannels.Data = strings([0,5]);
+            self.hChannels.Data = strings([0,6]);
             for idx = 1:mylsl.lslchannels
                 isselected = ismember(idx, self.selected);
                 isselectedstr = convertCharsToStrings(num2str(isselected));
+                isSSselected = ismember(idx, self.SSselected);
+                isSSselectedstr = convertCharsToStrings(num2str(isSSselected));
                 if idx <= size(mydevices.selected.lsl.channels, 1) && ...
                    self.isChannelVisible(mydevices.selected.lsl.channels(idx))
                     self.hChannels.Data(tblidx,:) = [
@@ -289,7 +363,8 @@ classdef selectchannels < handle
                         idx, ...
                         mydevices.selected.lsl.channels(idx).devch, ...
                         mydevices.selected.lsl.channels(idx).type, ...
-                        mydevices.selected.lsl.channels(idx).unit
+                        mydevices.selected.lsl.channels(idx).unit, ...
+                        isSSselectedstr
                     ];
                     tblidx = tblidx + 1;
                 elseif lenreqs == 0
@@ -298,11 +373,13 @@ classdef selectchannels < handle
                         idx, ...
                         "", ...
                         "", ...
-                        ""
+                        "", ...
+                        isSSselectedstr
                     ];
                     tblidx = tblidx + 1;
                 end
             end
+
             self.updateOK();
         end
     end
