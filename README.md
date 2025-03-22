@@ -112,3 +112,9 @@ An epoch is a configurable timespan within a session.
 Shows a centered bar with feedback values `<= 0.5` visualized in blue and values `> 0.5` visualized in red.
 
 ![ukt-nf-feedback](https://github.com/cyberjunk/ukt-nf/assets/780159/05b6cb15-8979-4106-8c4d-77c790c9f4a8)
+
+## Created by:
+- Dr. rer. nat. Beatrix Barth  
+- Dipl.-Inf. Clint Banzhaf  
+- M.Sc. Costanza Iester  
+- B.Sc. Ahmed Eldably  
