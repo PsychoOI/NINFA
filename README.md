@@ -19,7 +19,8 @@ A Matlab Framework for running Custom Neurofeedback Protocols via Lab Streaming 
 2. [Optional] Adjust the `TYPE` of the LSL input stream
 3. Click `OPEN` to connect with the LSL input stream
 4. Configure `SETTINGS`, `ID` and `EPOCHS`
-5. Click `START` to run a session
+5. Click `FILE` and then `SAVE`; then, you can use this setting in the future.
+6. Click `START` to run a session
 
 ![Image](https://github.com/user-attachments/assets/22cf33bc-c605-4228-8822-c8f9a9878e3b)
 
