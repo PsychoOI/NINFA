@@ -16,8 +16,8 @@ A Matlab Framework for running Custom Neurofeedback Protocols via Lab Streaming 
 ## Configuration
 
 1. Select your device
-2. [Optional] Adjust `TYPE` of LSL input stream
-3. Click `OPEN` to connect with LSL input stream
+2. [Optional] Adjust the `TYPE` of the LSL input stream
+3. Click `OPEN` to connect with the LSL input stream
 4. Configure `SETTINGS`, `ID` and `EPOCHS`
 5. Click `START` to run a session
 
@@ -26,7 +26,7 @@ A Matlab Framework for running Custom Neurofeedback Protocols via Lab Streaming 
 ### DEVICE
  
 * Select your device type and model from the available options.
-* Add a device by creating a `.json` file for it in subfolder `devices`
+* Add a device by creating a `.json` file for it in the subfolder `devices`
   * Take a look at the existing `nirs_nirx_nirsport2_26.json`
   * The most important part is defining the LSL channels sent by the device
 
@@ -34,22 +34,22 @@ A Matlab Framework for running Custom Neurofeedback Protocols via Lab Streaming 
 
 | Setting       | Description                                                  |
 |---------------|--------------------------------------------------------------|
-| `TYPE`        | LSL `type` of input stream to open. This is device specific. |
+| `TYPE`        | LSL `type` of the input stream to open. This is device-specific. |
 | `CHANNELS`    | Number of channels found in LSL stream                       | 
 | `SAMPLE RATE` | Measured Samplerate / Reported Samplerate by Device          |
 
 > [!IMPORTANT]  
-> The measured samplerate should (almost) equal the reported samplerate.</br>
-> Otherwise this turns from green to red and you're likely suffering </br>
+> The measured sample rate should (almost) equal the reported sample rate.</br>
+> Otherwise, this turns from green to red, and you're likely suffering </br>
 > from packet loss (e.g. due to bad or overloaded wifi).
 
 ### SETTINGS
 
 | Setting              | Description                                                                                    |
 |----------------------|------------------------------------------------------------------------------------------------|
-| `PROTOCOL`           | The Matlab file from folder `protocols` with algorithm executed on each window.                |
+| `PROTOCOL`           | The Matlab file from folder `protocols` with the algorithm executed on each window.                |
 | `CHANNELS`           | Select LSL channels to use in the selected protocol                                            |
-| `WINDOW SIZE (S)`    | Size of the sliding window in seconds. The window always contains last n seconds of samples.   |
+| `WINDOW SIZE (S)`    | Size of the sliding window in seconds. The window always contains the last n seconds of samples.   |
 | `SESSION LENGTH (S)` | The session will automatically stop after this time.                                           |
 
 ### ID
@@ -60,7 +60,7 @@ A Matlab Framework for running Custom Neurofeedback Protocols via Lab Streaming 
 | `SUBJECT`  | Number of Subject  |
 | `RUN`      | Number of Run      |
 
-The session will be automatically saved in subfolder `sessions` with name `STUDY-SUBJECT-RUN.mat`
+The session will be automatically saved in the subfolder `sessions` with the name `STUDY-SUBJECT-RUN.mat`
 
 ### EPOCHS
 
@@ -90,21 +90,21 @@ An epoch is a configurable timespan within a session.
 ### Marker
 
 * Sends markers on LSL with stream type and name set to `Marker`
-* Sends markers with same samplerate as LSL input (one marker for each LSL input sample)
+* Sends markers with the same sample rate as LSL input (one marker for each LSL input sample)
 * Default value is `0` (if no active epoch)
 
 ## Protocols
 
 * A protocol calculates a feedback value from an input window
-* To add a protocol put the Matlab file in subfolder `protocols`
-* The `MovAvg_SS.m` example requires a NIRS device that sends at least one `HbO` channel with `μmol/L` unit and one short channel selected.
+* To add a protocol,l put the Matlab file in the subfolder `protocols`
+* The `MovAvg_SS.m` example requires a NIRS device that sends at least one `HbO` channel with a `μmol/L` unit and one short channel selected.
 * The `RecordOnly.m` works with any device type and model and just records data
-* The `BanPass.m` example requires a NIRS device that sends at least one `HbO` channel with `μmol/L` unit without short channels selection.
-* The `MovAvg.m` example requires a NIRS device that sends at least one `HbO` channel with `μmol/L` unit without short channels selection.
+* The `BandPass.m` example requires a NIRS device that sends at least one `HbO` channel with a `μmol/L` unit without short channel selection.
+* The `MovAvg.m` example requires a NIRS device that sends at least one `HbO` channel with `μmol/L` unit without short channel selection.
 
 ## Delay and Execution Times
 
-* `DELAY` shows current offset in playback schedule (`where we are` vs. `where we should be`)
+* `DELAY` shows the current offset in the playback schedule (`where we are` vs `where we should be`)
 * It typically occurs if the average runtime of your protocol is larger than `1s/samplerate`
 
 ## Feedback Window
