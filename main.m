@@ -74,11 +74,7 @@ close all force;
 
 function onNewSample(src, ~)
     global mysession;
-<<<<<<< HEAD
-    mysession.pushSample(src.sample, src.timestamp);
-=======
     mysession.pushSample(src.sample, src.SSsample, src.timestamp);
->>>>>>> f496b24ee30651a9fc7dbeb244e83ad2216b189e
     mysession.update();
 end
 
