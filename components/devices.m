@@ -1,88 +1,129 @@
 classdef devices < handle
     %Devices
-    %   Detailed explanation goes here
+    %   Loads and manages devices from JSON files
 
     properties (Constant)
-        types = ["NIRS", "EEG", "test_device"]
+        types = ["NIRS", "EEG", "test_device"];
     end
-    
+
     properties
-        nirs     struct = [];
-        eeg      struct = [];
-        test_device struct = [];
-        selected struct = struct([]);
+        nirs        struct = struct([]);  % NIRS device array
+        eeg         struct = struct([]);  % EEG device array
+        test_device struct = struct([]);  % Test devices
+        selected    struct = struct([]);  % Currently selected device
     end
-    
+
     methods
         function self = devices()
             self.reload();
         end
-        
+
         function reload(self)
-            files = dir(fullfile("devices", "*.json")); % Get a list of JSON 
-            for f = 1:size(files, 1)
-                file = files(f).name; % Get the filename from the structure
-                disp("Attempting to open file: " + file); % Display the file being processed
+            % Load all devices from "devices/" folder
+            emptyDevice = struct( ...
+                'name',        "", ...
+                'type',        "", ...
+                'lsl',         [], ...
+                'channel_map', struct('long_channels', struct(), ...
+                                      'short_channels', struct()) ...
+            );
 
-                % Construct the full path to the JSON file
-                filepath = fullfile(".", "devices", file);
+            self.nirs        = emptyDevice([]);  
+            self.eeg         = emptyDevice([]);  
+            self.test_device = emptyDevice([]);  
 
-                % Check if the file exists before trying to read it
-                if exist(filepath, 'file') == 2
-                    json = jsondecode(fileread(filepath)); % Read and decode JSON
-                    switch json.type
-                        case "NIRS"
-                            idx = length(self.nirs) + 1;
-                            self.nirs(idx).name = json.name;
-                            self.nirs(idx).type = json.type;
-                            self.nirs(idx).lsl = json.lsl;
-                        case "EEG"
-                            idx = length(self.eeg) + 1;
-                            self.eeg(idx).name = json.name;
-                            self.eeg(idx).type = json.type;
-                            self.eeg(idx).lsl = json.lsl;
-                        case "test_device"
-                            idx = length(self.test_device) + 1;
-                            self.test_device(idx).name = json.name;
-                            self.test_device(idx).type = json.type;
-                            self.test_device(idx).lsl = json.lsl;
-                        otherwise
-                            disp("Ignoring unknown device type");
-                    end
+            files = dir(fullfile("devices","*.json"));
+            for f = 1:numel(files)
+                json = jsondecode(fileread(fullfile("devices", files(f).name)));
+                device = self.createDeviceStructure(json);
+                switch lower(json.type)
+                    case 'nirs'
+                        self.nirs(end+1) = device;
+                    case 'eeg'
+                        self.eeg(end+1) = device;
+                    case 'test_device'
+                        self.test_device(end+1) = device;
+                    otherwise
+                        warning("Unknown device type: %s", json.type);
                 end
+                disp("Loaded device: " + json.name + " (" + json.type + ")");
             end
         end
-        
-        function r = select(self, type, name)
-            switch type
-                case "NIRS"
-                    for d = 1:length(self.nirs)
-                        if self.nirs(d).name == name
-                            self.selected = self.nirs(d);
-                            r = true;
-                            return
-                        end
-                    end
-                case "EEG"
-                    for d = 1:length(self.eeg)
-                        if self.eeg(d).name == name
-                            self.selected = self.eeg(d);
-                            r = true;
-                            return
-                        end
-                    end
-                case "test_device"
-                    for d = 1:length(self.test_device)
-                        if self.test_device(d).name == name
-                            self.selected = self.test_device(d);
-                            r = true;
-                            return
-                        end
-                    end
-                otherwise
-                    warning("Ignoring unknown device type: " + type);
+
+        function device = createDeviceStructure(~, json)
+            device.name = json.name;
+            device.type = json.type;
+            device.lsl  = json.lsl;
+            if isfield(json,'channel_map')
+                device.channel_map = json.channel_map;
+            else
+                device.channel_map = struct('long_channels', struct(), ...
+                                            'short_channels', struct());
             end
-            r = false;
+        end
+
+        function ok = select(self, type, name)
+            % Choose a device by type & name
+            ok = false;
+            switch lower(type)
+                case 'nirs',         list = self.nirs;
+                case 'eeg',          list = self.eeg;
+                case 'test_device',  list = self.test_device;
+                otherwise
+                    warning("Unknown device type: %s", type);
+                    return;
+            end
+            for i = 1:numel(list)
+                if list(i).name == name
+                    self.selected = list(i);
+                    disp("Selected device: " + name + " (" + type + ")");
+                    ok = true;
+                    return;
+                end
+            end
+            warning("Device %s of type %s not found.", name, type);
+        end
+
+        function idxs = getLongChannelIndices(self)
+            % Translate devch IDs → LSL indices (long/HbO vs HbR) 
+            cm = self.selected.channel_map.long_channels;
+            if ~isstruct(cm)
+                error('getLongChannelIndices:BadMap', ...
+                      'long_channels must be a struct for device "%s"', ...
+                      self.selected.name);
+            end
+            allCh = self.selected.lsl.channels;
+            idxs  = uint32([]);
+            for f = fieldnames(cm)'
+                typStr = f{1};
+                devchs = cm.(typStr);
+                for d = devchs(:)'
+                    % find only the channels whose devch==d AND whose type==typStr
+                    matches = find( arrayfun(@(c) c.devch==d && strcmp(c.type,typStr), allCh) );
+                    idxs = [idxs; uint32(matches(:))];
+                end
+            end
+            idxs = unique(idxs);  % sort & remove duplicates
+        end
+
+        function idxs = getShortChannelIndices(self)
+            cm = self.selected.channel_map.short_channels;
+            if ~isstruct(cm)
+                error('getShortChannelIndices:BadMap', ...
+                      'short_channels must be a struct for device "%s"', ...
+                      self.selected.name);
+            end
+            allCh = self.selected.lsl.channels;
+            idxs  = uint32([]);
+            for f = fieldnames(cm)'
+                typStr = f{1};
+                devchs = cm.(typStr);
+                for d = devchs(:)'
+                    matches = find( arrayfun(@(c) c.devch==d && strcmp(c.type,typStr), allCh) );
+                    idxs = [idxs; uint32(matches(:))];
+                end
+            end
+            idxs = unique(idxs);
         end
     end
 end
