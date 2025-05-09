@@ -315,13 +315,21 @@ classdef session < handle
                 export.SSwindow.(t) = self.SSwindow.(t)(1:min(self.windowidx,self.windowsize), :);
             end
             
-            export.times    = self.times(1:used);
+            export.times       = self.times(1:used);
             export.windowtimes = self.windowtimes(1:min(self.windowidx,self.windowsize));
-            export.feedback = self.feedback(1:used);
-            export.markers  = self.markers(1:used);
+            export.feedback    = self.feedback(1:used);
+            export.markers     = self.markers(1:used);
             
+            % Choose study name or default to "unnamed"
+            if self.study == ""
+                studyName = "unnamed";
+            else
+                studyName = self.study;
+            end
+            
+            % Build the filename and save
             fname = sprintf("%s-%03d-%02d.mat", ...
-                ternary(self.study=="","unnamed",self.study), ...
+                studyName, ...
                 self.subject, self.run);
             save(fullfile("sessions", fname), '-struct', 'export');
         end
