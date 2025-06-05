@@ -1,28 +1,40 @@
 classdef selectchannels < handle
-    %LSL CHANNEL SELECTION  
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    properties(Constant)
+    %LSL CHANNEL SELECTION
+    % UI for selecting NF (long) and SS (short) fNIRS channels,
+    % with JSON pre-selection, sanity checks, and live protocol validation.
+
+    properties (Constant)
         figwidth  = 512;
         figheight = 512;
-        padding = 8;    
+        padding   = 8;
         buttonheight = 24;
-        panelwidth = selectchannels.figwidth-2*selectchannels.padding;
-        tablewidth = selectchannels.panelwidth-2*selectchannels.padding;
+        panelwidth   = selectchannels.figwidth  - 2*selectchannels.padding;
+        tablewidth   = selectchannels.panelwidth - 2*selectchannels.padding;
         panelheightrequired = 128;
         panelheightchannels = selectchannels.figheight - ...
-            4*selectchannels.padding - ...
-            selectchannels.panelheightrequired - ...
-            selectchannels.buttonheight;
+                              4*selectchannels.padding - ...
+                              selectchannels.panelheightrequired - ...
+                              selectchannels.buttonheight;
         tableheightrequired = selectchannels.panelheightrequired - ...
-            2*selectchannels.padding - 16;
+                              2*selectchannels.padding - 16;
         tableheightchannels = selectchannels.panelheightchannels - ...
-            2*selectchannels.padding - 16;
+                              2*selectchannels.padding - 16;
     end
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
+
+    properties (Dependent)
+        selected    % NF (long) channel indices
+        SSselected  % SS (short) channel indices
+    end
+
     properties
+        isok   logical = false;  % NF meets protocol requirements
+        SSisok logical = false;  % SS meets protocol requirements
+    end
+
+    properties (Access=private)
+        selected_   uint32 = [];
+        SSselected_ uint32 = [];
+
         hFig           matlab.ui.Figure;
         hRequiredPanel matlab.ui.container.Panel;
         hChannelsPanel matlab.ui.container.Panel;
@@ -30,357 +42,413 @@ classdef selectchannels < handle
         hChannels      matlab.ui.control.Table;
         hButton        matlab.ui.control.Button;
         hStyleOk       matlab.ui.style.Style;
-        hStyleNotOk    matlab.ui.style.Style; 
-        selected       uint32  = [];
-        SSselected          uint32  = [];
-        isok           logical = false;
-        SSisok         logical = false;
+        hStyleNotOk    matlab.ui.style.Style;
     end
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
+
     events
         Done
     end
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    methods (Access = private)
-        
-        % returns true if channel matches a requirement or no requirements
-        function r = isChannelVisible(self, channel)
-            lenreqs = size(self.hRequired.Data, 1);
-            if lenreqs == 0
-                r = true;
-                return
-            end
-            for idx = 1:lenreqs
-                if self.hRequired.Data(idx, 4) == channel.type && ...
-                   self.hRequired.Data(idx, 5) == channel.unit
-                    r = true;
-                    return;
-                end
-            end
-            r = false;
-        end
-        
-        % updates ok status
-        function updateOK(self)
-            global myprotocols;
-            global mydevices;
-            chreq = myprotocols.selected.fh.requires().channels;
-            chlsl = mydevices.selected.lsl.channels;
-            self.isok = ~isempty(self.selected);
-            for idxreq = 1:length(chreq)
-                found = 0;
-                for idxlsl = [self.selected]
-                    if chreq(idxreq).type == chlsl(idxlsl).type && ...
-                       chreq(idxreq).unit == chlsl(idxlsl).unit
-                        found = found + 1;
-                    end
-                end
-                min = chreq(idxreq).min;
-                max = chreq(idxreq).max;
-                if found < min || found > max
-                    self.isok = false;
-                    if isvalid(self.hRequired)
-                        self.hRequired.Data(idxreq, 3) = found;
-                        addStyle(self.hRequired, ...
-                        self.hStyleNotOk, 'cell', [idxreq 3]);
-                        self.SSisok = true;
-                    end
-                else
-                    if isvalid(self.hRequired)
-                        self.hRequired.Data(idxreq, 3) = found;
-                        addStyle(self.hRequired, ...
-                            self.hStyleOk, 'cell', [idxreq 3]);
-                    end
-                end
-            end
-            if isvalid(self.hChannelsPanel)
-                self.hChannelsPanel.Title = "SELECTED: " + ...
-                    length(self.selected);
-                  %% SS
-                  req = myprotocols.selected.fh.requires();
-                  if ~isfield(req, 'SSchannels')
-                        req.SSchannels = [];
-                  end
-                 SSchreq = req.SSchannels;
-                 self.SSisok = ~isempty(self.SSselected);
-                 for idxreq = 1:length(SSchreq)
-                     found = 0;
-                     for idxlsl = [self.SSselected]
-                         if SSchreq(idxreq).type == chlsl(idxlsl).type && ...
-                            SSchreq(idxreq).unit == chlsl(idxlsl).unit
-                             found = found + 1;
-                         end
-                      end
-                      min = SSchreq(idxreq).min;
-                      max = SSchreq(idxreq).max;
-                      if found < min || found > max
-                         self.SSisok = false;
-                         if isvalid(self.hRequired)
-                            self.hRequired.Data(idxreq, 8) = found;
-                            addStyle(self.hRequired, ...
-                            self.hStyleNotOk, 'cell', [idxreq 8]);
-                        end
-                      else
-                         if isvalid(self.hRequired)
-                            self.hRequired.Data(idxreq, 8) = found;
-                            addStyle(self.hRequired, ...
-                            self.hStyleOk, 'cell', [idxreq 8]);
-                        end
-                     end
-                end
-            end
-            if isvalid(self.hChannelsPanel)
-                 self.hChannelsPanel.Title = "SELECTED: " + ...
-                     "NF = " + length(self.selected) + "  SS = " + length(self.SSselected);
-            end
-        end
-        
-        % executed when checkbox is changed
-        function onSelectedChanged(self, ~, ~)
-            newselected = [];
-            newSSelected = [];
-            for idx = 1:size(self.hChannels.Data, 1)
-                row = self.hChannels.Data(idx,:);
-                % Checking the first column
-                if row(1) == "1"
-                    lslidx = str2double(row(2));
-                    newselected(end+1) = lslidx;
-                end
-                % Checking the sisth column
-                if row(6) == "1"
-                    lslidx = str2double(row(2));
-                    newSSelected(end+1) = lslidx;
-                end
-            end
-            self.selected = newselected;
-            self.SSselected = newSSelected;
-        end
 
-        % executed on OK button
-        function onButtonClicked(self, ~, ~)
-            notify(self, 'Done');
-            self.close();
-        end
-    end
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
     methods
+        %% Dependent property accessors
         function r = get.selected(self)
-            r = self.selected;
+            r = self.selected_;
         end
-        
         function set.selected(self,val)
-            self.selected = val;
+            self.selected_ = uint32(val);
             self.updateOK();
         end
-        
         function r = get.SSselected(self)
-            r = self.SSselected;
+            r = self.SSselected_;
         end
-        
         function set.SSselected(self,val)
-            self.SSselected = val;
-            self.updateOK(); % non faccio il controllo su SS
+            self.SSselected_ = uint32(val);
+            self.updateOK();
         end
 
+        %% Build the REQUIRED table
+        function initRequired(self)
+            if isempty(self.hFig)||~isvalid(self.hFig), return; end
+            global myprotocols;
+            reqs = myprotocols.selected.fh.requires();
+            n    = numel(reqs.channels);
+            C    = cell(n,8);
+            for i=1:n
+                ch = reqs.channels(i);
+                C{i,1} = ch.min;
+                C{i,2} = ch.max;
+                C{i,3} = 0;                % SEL_NF
+                C{i,4} = char(ch.type);
+                C{i,5} = char(ch.unit);
+                if isfield(reqs,'SSchannels') && i<=numel(reqs.SSchannels)
+                    ss = reqs.SSchannels(i);
+                    C{i,6} = ss.min;
+                    C{i,7} = ss.max;
+                else
+                    C{i,6} = 0;
+                    C{i,7} = 0;
+                end
+                C{i,8} = 0;                % SEL_SS
+            end
+            self.hRequired.Data = C;
+        end
+
+        %% Build the SELECTED table
+        function initSelected(self)
+            if isempty(self.hFig)||~isvalid(self.hFig), return; end
+            global mylsl mydevices;
+            allCh = mydevices.selected.lsl.channels;
+            rows  = cell(0,6);
+            for idx=1:mylsl.lslchannels
+                if idx<=numel(allCh) && self.isChannelVisible(allCh(idx))
+                    nf = ismember(idx,self.selected_);
+                    ss = ismember(idx,self.SSselected_);
+                    ch = allCh(idx);
+                    rows(end+1,:) = { ...
+                        logical(nf), ...   % NF
+                        idx, ...           % LSL CH
+                        ch.devch, ...      % DEV CH
+                        char(ch.type), ... % TYPE
+                        char(ch.unit), ... % UNIT
+                        logical(ss)};      % SS
+                end
+            end
+            self.hChannels.Data = rows;
+            self.hChannelsPanel.Title = sprintf( ...
+                'NF: %d  |  SS: %d', numel(self.selected_), numel(self.SSselected_));
+            self.updateOK();
+        end
+
+        %% Pre-select from JSON channel_map with UI feedback
+        function preselectFromDeviceJSON(self)
+            global mydevices;
+            dev = mydevices.selected;
+            if isempty(dev) || ~isfield(dev,'lsl') || isempty(dev.lsl.channels)
+                return
+            end
+            map = dev.channel_map;
+            % skip explicit empty arrays
+            if isnumeric(map.long_channels) && isempty(map.long_channels) && ...
+               isnumeric(map.short_channels) && isempty(map.short_channels)
+                return
+            end
+    
+            try
+                % Attempt validation and pick the indices
+                self.validateChannelMap(map, dev.lsl.channels);
+                self.selected   = mydevices.getLongChannelIndices();
+                self.SSselected = mydevices.getShortChannelIndices();
+
+            catch ME
+                % Prepare a succinct, user-facing message
+                userMsg = strrep(ME.message, newline, ' ');  % single-line
+                dialogTitle = 'Channel Map Error';
+    
+                if ~isempty(self.hFig) && isvalid(self.hFig)
+                    % If the UI figure is up, use uialert
+                    uialert(self.hFig, userMsg, dialogTitle);
+                end
+                % Do NOT rethrow — we've shown the error to the user
+            end
+        end
+
+        %% Show (or refresh) the UI
         function show(self)
-            % window already open
             if isvalid(self.hFig)
                 self.initRequired();
+                self.preselectFromDeviceJSON();
                 self.initSelected();
                 figure(self.hFig);
                 return;
             end
-            
-            % create figure
-            self.hFig             = uifigure();
-            self.hFig.Visible     = 'off';
-            self.hFig.Name        = 'SELECT LSL CHANNELS';
-            %self.hFig.Color       = [0.0 0.0 0.0];
-            self.hFig.MenuBar     = 'none';
-            self.hFig.Units       = 'pixels';
-            self.hFig.NumberTitle = 'off';
-            self.updateOK();
-            self.hFig.Position    = [0, 0, ...
-                selectchannels.figwidth, ... 
-                selectchannels.figheight];
 
-            % create required panel
-            self.hRequiredPanel = uipanel(self.hFig);
-            self.hRequiredPanel.AutoResizeChildren = 'on';
-            self.hRequiredPanel.Title = 'REQUIRED';
-            self.hRequiredPanel.Position = [
-                selectchannels.padding, ...
-                selectchannels.figheight - ...
-                  selectchannels.padding - ...
-                  selectchannels.panelheightrequired, ...
-                selectchannels.panelwidth, ...
-                selectchannels.panelheightrequired
-            ];
-            
-            % create channels panel
-            self.hChannelsPanel = uipanel(self.hFig);
-            self.hChannelsPanel.AutoResizeChildren = 'on';
-            self.hChannelsPanel.Title = 'SELECTED: 0';
-            self.hChannelsPanel.Position = [
-                selectchannels.padding, ...
-                selectchannels.buttonheight + 2*selectchannels.padding, ...
-                selectchannels.panelwidth, ...
-                selectchannels.panelheightchannels
-            ];
-            % create required table
-             self.hRequired = uitable(self.hRequiredPanel);
-             self.hRequired.ColumnName = {'MIN_NF'; 'MAX_NF'; 'SEL_NF'; 'TYPE'; 'UNIT';'MIN_SS';'MAX_SS';'SEL_SS'};
-             self.hRequired.ColumnWidth = {'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto', 'auto'};
-             self.hRequired.ColumnFormat = {'short', 'short', 'short', 'char', 'char' ,'short', 'short' ,'short'};
-             self.hRequired.RowName = {};
-             self.hRequired.ColumnEditable = [false false false false false false false false];
-             self.hRequired.Position = [...
-                 selectchannels.padding, ...
-                 selectchannels.padding, ...
-                 selectchannels.tablewidth, ...
-                 selectchannels.tableheightrequired];
-             self.hRequired.SelectionType = 'cell';
+            % Main figure
+            self.hFig = uifigure( ...
+                'Name','SELECT LSL CHANNELS', ...
+                'MenuBar','none','NumberTitle','off', ...
+                'Position',[0,0,selectchannels.figwidth,selectchannels.figheight]);
 
-            % create channels table
-            self.hChannels = uitable(self.hChannelsPanel);
-            self.hChannels.ColumnName = {'NF'; 'LSL CH'; 'DEV CH'; 'TYPE'; 'UNIT';'SS'};
-            self.hChannels.ColumnWidth = {35, 60, 60, 'auto', 100, 35};
-            self.hChannels.ColumnFormat = { 
-                'logical','short', 'short', 'char', 'char' , 'logical'};
-            self.hChannels.RowName = {};
-            self.hChannels.ColumnEditable = [true  false false false false true];
-            self.hChannels.Position = [...
-                selectchannels.padding, ...
-                selectchannels.padding, ...
-                selectchannels.tablewidth, ...
-                selectchannels.tableheightchannels];
-            self.hChannels.CellEditCallback = @self.onSelectedChanged;
-            self.hChannels.SelectionType = 'cell';
+            % REQUIRED panel
+            self.hRequiredPanel = uipanel(self.hFig, ...
+                'Title','REQUIRED','AutoResizeChildren','on', ...
+                'Position',[ ...
+                  selectchannels.padding, ...
+                  selectchannels.figheight - selectchannels.padding - selectchannels.panelheightrequired, ...
+                  selectchannels.panelwidth, selectchannels.panelheightrequired]);
+            self.hRequired = uitable(self.hRequiredPanel, ...
+                'ColumnName',{'MIN_NF','MAX_NF','SEL_NF','TYPE','UNIT','MIN_SS','MAX_SS','SEL_SS'}, ...
+                'ColumnFormat',{'numeric','numeric','numeric','char','char','numeric','numeric','numeric'}, ...
+                'ColumnEditable',false(1,8), ...
+                'RowName',{}, ...
+                'Position',[ ...
+                  selectchannels.padding, selectchannels.padding, ...
+                  selectchannels.tablewidth, selectchannels.tableheightrequired]);
 
-            % create center style
-            s = uistyle();
-            s.HorizontalAlignment = 'center';
-            addStyle(self.hChannels, s, 'column', [2;3]);
-            addStyle(self.hRequired, s, 'column', [1;2;3]);
-            
-            % create ok button
-            self.hButton = uibutton(self.hFig, 'push');
-            self.hButton.ButtonPushedFcn = @self.onButtonClicked;
-            self.hButton.FontWeight = 'bold';
-            self.hButton.Text = 'OK';
-            self.hButton.Position = [
-                selectchannels.padding, ...
-                selectchannels.padding, ...
-                selectchannels.panelwidth, ...
-                selectchannels.buttonheight];
-            
-            % init ok style
-            self.hStyleOk = uistyle();
-            self.hStyleOk.BackgroundColor = 'green';
-            self.hStyleOk.HorizontalAlignment = 'center';
-            
-            % init notok style
-            self.hStyleNotOk = uistyle();
-            self.hStyleNotOk.BackgroundColor = 'red';
-            self.hStyleNotOk.HorizontalAlignment = 'center';
-            
-            % init tables data
+            % SELECTED panel
+            self.hChannelsPanel = uipanel(self.hFig, ...
+                'Title','SELECTED: 0','AutoResizeChildren','on', ...
+                'Position',[ ...
+                  selectchannels.padding, selectchannels.buttonheight+2*selectchannels.padding, ...
+                  selectchannels.panelwidth, selectchannels.panelheightchannels]);
+            self.hChannels = uitable(self.hChannelsPanel, ...
+                'ColumnName',{'NF','LSL CH','DEV CH','TYPE','UNIT','SS'}, ...
+                'ColumnFormat',{'logical','numeric','numeric','char','char','logical'}, ...
+                'ColumnEditable',[true,false,false,false,false,true], ...
+                'RowName',{}, ...
+                'CellEditCallback',@self.onSelectedChanged, ...
+                'Position',[ ...
+                  selectchannels.padding, selectchannels.padding, ...
+                  selectchannels.tablewidth, selectchannels.tableheightchannels]);
+
+            % Styles
+            c = uistyle('HorizontalAlignment','center');
+            addStyle(self.hRequired, c, 'column',1:8);
+            addStyle(self.hChannels, c, 'column',[2,3]);
+            self.hStyleOk    = uistyle('BackgroundColor','green','HorizontalAlignment','center');
+            self.hStyleNotOk = uistyle('BackgroundColor','red','HorizontalAlignment','center');
+
+            % OK button
+            self.hButton = uibutton(self.hFig, ...
+                'Text','OK','FontWeight','bold', ...
+                'Position',[ ...
+                  selectchannels.padding, selectchannels.padding, ...
+                  selectchannels.panelwidth, selectchannels.buttonheight], ...
+                'ButtonPushedFcn',@self.onSelectedClicked);
+
+            % Initial fill
             self.initRequired();
+            self.preselectFromDeviceJSON();
             self.initSelected();
-            
-            % show
-            self.hFig.Visible = 'on';
         end
-        
+
         function close(self)
-            if isvalid(self.hFig)
-                close(self.hFig);
+            if ~isempty(self.hFig) && isvalid(self.hFig)
+                delete(self.hFig);
             end
         end
-        
-         function initRequired(self)
-             if isempty(self.hFig) || ~isvalid(self.hFig)
-                 return
-             end
-             global myprotocols;
-             req = myprotocols.selected.fh.requires();
-             self.hRequired.Data = strings([0,8]);
-             for idx = 1:length(req.channels)
-                  % Check if SSchannels exist
-                  if ~isfield(req, 'SSchannels') || isempty(req.SSchannels)
-                        minSSchannels = 0;
-                        maxSSchannels = 0;
-                  else
-                        % Ensure idx does not exceed the length of SSchannels
-                        if idx <= length(req.SSchannels)
-                            minSSchannels = req.SSchannels(idx).min;
-                            maxSSchannels = req.SSchannels(idx).max;
-                        else
-                            % If idx exceeds, assign default values
-                            minSSchannels = 0;
-                            maxSSchannels = 0;
-                        end
-                  end
+    end
 
-                 % Fill in the data for the current channel
-                 self.hRequired.Data(idx,:) = [
-                     req.channels(idx).min, ...
-                     req.channels(idx).max, ...
-                     0, ...
-                     req.channels(idx).type, ...
-                     req.channels(idx).unit, ...
-                     minSSchannels, ...
-                     maxSSchannels, ...
-                     0, ...
-                 ];
-             end
-          end
-
-        function initSelected(self)
-            if isempty(self.hFig) || ~isvalid(self.hFig)
-                return;
-            end
-            global mylsl;
-            global mydevices;
-            tblidx = 1;
-            lenreqs = size(self.hRequired.Data, 1);
-            self.hChannels.Data = strings([0,6]);
-            for idx = 1:mylsl.lslchannels
-                isselected = ismember(idx, self.selected);
-                isselectedstr = convertCharsToStrings(num2str(isselected));
-                isSSselected = ismember(idx, self.SSselected);
-                isSSselectedstr = convertCharsToStrings(num2str(isSSselected));
-                if idx <= size(mydevices.selected.lsl.channels, 1) && ...
-                   self.isChannelVisible(mydevices.selected.lsl.channels(idx))
-                    self.hChannels.Data(tblidx,:) = [
-                        isselectedstr, ...
-                        idx, ...
-                        mydevices.selected.lsl.channels(idx).devch, ...
-                        mydevices.selected.lsl.channels(idx).type, ...
-                        mydevices.selected.lsl.channels(idx).unit, ...
-                        isSSselectedstr
-                    ];
-                    tblidx = tblidx + 1;
-                elseif lenreqs == 0
-                    self.hChannels.Data(tblidx,:) = [
-                        isselectedstr, ...
-                        idx, ...
-                        "", ...
-                        "", ...
-                        "", ...
-                        isSSselectedstr
-                    ];
-                    tblidx = tblidx + 1;
+    methods (Access=private)
+        %% Visibility filter
+        function r = isChannelVisible(self,ch)
+            if isempty(self.hRequired.Data), r=true; return; end
+            D = self.hRequired.Data;
+            for i=1:size(D,1)
+                if strcmp(D{i,4},ch.type) && strcmp(D{i,5},ch.unit)
+                    r=true; return;
                 end
             end
+            r=false;
+        end
+        %% Helper: collect IDs from struct or flat vector
+        function ids = collectIDs(~, x)
+            if isstruct(x)
+                c = struct2cell(x);
+                c = c(~cellfun(@isempty, c));
+                ids = vertcat(c{:});
+            else
+                ids = x(:);
+            end
+        end
 
-            self.updateOK();
+         %% Top‐level JSON sanity checks
+        function validateChannelMap(self, map, allCh)
+            % Ensure struct with required fields
+            if ~isstruct(map) || ~isfield(map,'long_channels') || ~isfield(map,'short_channels')
+                error('selectchannels:InvalidChannelMap', ...
+                      'channel_map must be a struct with fields ''long_channels'' & ''short_channels''');
+            end
+    
+            % Flatten cell→struct if needed, and guard empty
+            if iscell(allCh), allCh = vertcat(allCh{:}); end
+            if isempty(allCh)
+                error('selectchannels:NoChannels','Device has no channels to validate.');
+            end
+    
+            devChList = [allCh.devch];
+            maxCh     = max(devChList);
+    
+            % Extract lists
+            longIds  = collectIDs(self, map.long_channels);
+            shortIds = collectIDs(self, map.short_channels);
+    
+            % Range check & overlap
+            outOfRange = setdiff([longIds; shortIds], (1:maxCh).');
+            if ~isempty(outOfRange)
+                error('selectchannels:InvalidChannelMap', ...
+                      'Channel IDs out of range [1–%d]: %s', maxCh, mat2str(outOfRange));
+            end
+            overlap = intersect(longIds, shortIds);
+            if ~isempty(overlap)
+                error('selectchannels:InvalidChannelMap', ...
+                      'Channels cannot be both long & short: %s', mat2str(overlap));
+            end
+    
+            % Delegate per‐type or flat checks
+            if isstruct(map.long_channels)
+                self.validatePerTypeMap(map.long_channels,  allCh, 'long_channels',  maxCh);
+                self.validatePerTypeMap(map.short_channels, allCh, 'short_channels', maxCh);
+            else
+                self.validateChannelIDs(longIds,  maxCh, 'long_channels',  '', false);
+                self.validateChannelIDs(shortIds, maxCh, 'short_channels', '', true);
+            end
+        end
+
+
+         %% Per‐type grouping checks
+        function validatePerTypeMap(self, mf, allCh, fieldName, maxCh)
+            % Flatten again if cell
+            if iscell(allCh), allCh = vertcat(allCh{:}); end
+            devChList = [allCh.devch];
+    
+            for fn = fieldnames(mf)'
+                subType = fn{1};          % e.g. 'HbO' or 'HbR'
+                ids     = mf.(subType);
+                if isempty(ids), continue; end
+    
+                % Now validate that specific JSON.<fieldName>.<subType>
+                % e.g: JSON.Long_Channel.HbO
+                self.validateChannelIDs(ids, maxCh, fieldName, subType, true);
+    
+                % Ensure at least one device channel matches this type
+                mask = ismember(devChList, ids);
+                types = {allCh(mask).type};
+                if ~any(strcmp(types, subType))
+                    error('selectchannels:InvalidChannelMap', ...
+                          'In JSON.%s.%s, no device channels of type ''%s'' were found.', ...
+                           fieldName, subType, subType);
+                end
+            end
+        end
+
+         %% Flat‐vector / per‐subType checks
+        function validateChannelIDs(~, ids, maxN, fieldName, subType, allowEmpty)
+            % Build a human‐readable context string
+            if ~isempty(subType)
+                ctx = sprintf('JSON.%s.%s', fieldName, subType);
+            else
+                ctx = sprintf('JSON.%s', fieldName);
+            end
+    
+            % Error identifier (kept short)
+            idTag = fieldName;
+            if ~isempty(subType), idTag = [idTag '_' subType]; end
+            errID = sprintf('selectchannels:Invalid_%s', idTag);
+    
+            % Empty?
+            if isempty(ids)
+                if allowEmpty
+                    return
+                else
+                    error(errID, 'Field ''%s'' must not be empty.', ctx);
+                end
+            end
+    
+            % Integer vector?
+            if ~isvector(ids) || any(ids ~= floor(ids))
+                error(errID, 'Field ''%s'' must be a vector of integers.', ctx);
+            end
+    
+            % Range
+            if any(ids < 1) || any(ids > maxN)
+                error(errID, 'Values in ''%s'' must be between 1 and %d.', ctx, maxN);
+            end
+    
+            % Duplicates
+            [u,~,ic]   = unique(ids);
+            counts     = accumarray(ic,1);
+            dupIDs     = u(counts>1);
+            if ~isempty(dupIDs)
+                error(errID, 'Field ''%s'' contains duplicate IDs: %s.', ctx, mat2str(dupIDs));
+            end
+    
+            % Too many entries
+            if numel(ids) > maxN
+                error(errID, 'Field ''%s'' has too many entries (max %d).', ctx, maxN);
+            end
+        end
+
+
+
+         %% UI‐sanity check
+        function ok = validateUISelection(self)
+            if isempty(self.hChannels) || ~isvalid(self.hChannels)
+                ok = true; return;
+            end
+    
+            totalCh = size(self.hChannels.Data,1);
+            sel     = self.selected_;
+            ss      = self.SSselected_;
+    
+            ok1 = ~isempty(sel) && all(sel>=1 & sel<=totalCh);
+            ok2 = isempty(ss)   || all(ss>=1 & ss<=totalCh);
+            ok3 = (numel(sel)+numel(ss)) <= totalCh;
+    
+            ok = ok1 && ok2 && ok3;
+        end
+
+
+        %% Protocol + UI validity & styling
+        function updateOK(self)
+            global myprotocols mydevices;
+            reqs   = myprotocols.selected.fh.requires().channels;
+            lslchs = mydevices.selected.lsl.channels;
+            sel    = intersect(self.selected_,1:numel(lslchs));
+            ss     = intersect(self.SSselected_,1:numel(lslchs));
+            self.isok = ~isempty(sel);
+            for i=1:numel(reqs)
+                r = reqs(i);
+                types = string({lslchs(sel).type});
+                units = string({lslchs(sel).unit});
+                cnt = sum(types==string(r.type) & units==string(r.unit));
+                bg = self.hStyleOk;
+                if cnt<r.min||cnt>r.max, bg = self.hStyleNotOk; self.isok=false; end
+                if isvalid(self.hRequired)
+                    self.hRequired.Data{i,3} = cnt;
+                    addStyle(self.hRequired,bg,'cell',[i,3]);
+                end
+            end
+            self.SSisok = true;
+            for i=1:numel(reqs)
+                r = reqs(i);
+                if isfield(r,'SSchannels')&&~isempty(r.SSchannels)
+                    types = string({lslchs(ss).type});
+                    units = string({lslchs(ss).unit});
+                    cnt = sum(types==string(r.type) & units==string(r.unit));
+                    bg = self.hStyleOk;
+                    if cnt<r.SSchannels.min||cnt>r.SSchannels.max, bg = self.hStyleNotOk; self.SSisok=false; end
+                    if isvalid(self.hRequired)
+                        self.hRequired.Data{i,7} = cnt;
+                        addStyle(self.hRequired,bg,'cell',[i,7]);
+                    end
+                end
+            end
+            uiok = self.validateUISelection();
+            if ~isempty(self.hButton)&&isvalid(self.hButton)
+                self.hButton.Enable = matlab.lang.OnOffSwitchState(self.isok && self.SSisok && uiok);
+            end
+        end
+
+        %% Table-edit callback
+        function onSelectedChanged(self,~,~)
+            T = self.hChannels.Data;
+            nf = uint32([]); ss = uint32([]);
+            for r=1:size(T,1)
+                if T{r,1}, nf(end+1)=uint32(T{r,2}); end
+                if T{r,6}, ss(end+1)=uint32(T{r,2}); end
+            end
+            self.selected   = nf;
+            self.SSselected = ss;
+        end
+
+        %% OK button callback
+        function onSelectedClicked(self,~,~)
+            if ~self.isok
+                uialert(self.hFig,'Invalid channel selection','Selection Error');
+                return;
+            end
+            notify(self,'Done');
+            self.close();
         end
     end
 end
