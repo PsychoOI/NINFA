@@ -493,15 +493,8 @@ classdef selectchannels < handle
             end
 
             badList = unique(uint32(badList(:)));
-
-            fprintf('Before deselect: NF = [%s], SS = [%s]\n', ...
-                num2str(self.selected_.').' , num2str(self.SSselected_.').' );
-
             self.selected_   = setdiff(self.selected_,   badList, 'stable');
             self.SSselected_ = setdiff(self.SSselected_, badList, 'stable');
-
-            fprintf(' After deselect: NF = [%s], SS = [%s]\n', ...
-                num2str(self.selected_.').' , num2str(self.SSselected_.').' );
 
             if ~isempty(self.hFig) && isvalid(self.hFig)
                 self.initSelected();
