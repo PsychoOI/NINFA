@@ -105,7 +105,6 @@ classdef selectchannels < handle
             % build the list of *absolute* LSL indices that pass your filter
             global mydevices
             
-            numel(mydevices.selected.lsl.channels), mylsl.lslchannels);
             allCh = mydevices.selected.lsl.channels;
             vis   = uint32([]);
             for idx = 1:numel(allCh)
