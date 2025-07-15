@@ -2,7 +2,7 @@
   "name": "NIRx NIRSport2 (26CH)",
   "type": "NIRS",
   "lsl": {
-    "type": "NIRS",
+    "type": "NIRSx",
     "channels": [
       { "devch":  0, "type": "COUNTER", "unit": "" },
       { "devch":  1, "type": "WL760NM", "unit": "V" },
