@@ -1,9 +1,9 @@
 {
-  "name": "NIRx NIRSport2",
+  "name": "Bea_real_device",
   "type": "NIRS",
   "lsl": {
     "type": "NIRS",
-    "channels": [
+     "channels": [
       { "devch":  0, "type": "COUNTER", "unit": "" },
       { "devch":  1, "type": "WL760NM", "unit": "V" },
       { "devch":  2, "type": "WL760NM", "unit": "V" },
@@ -25,7 +25,13 @@
       { "devch": 18, "type": "WL760NM", "unit": "V" },
       { "devch": 19, "type": "WL760NM", "unit": "V" },
       { "devch": 20, "type": "WL760NM", "unit": "V" },
-        
+      { "devch": 21, "type": "WL760NM", "unit": "V" },
+      { "devch": 22, "type": "WL760NM", "unit": "V" },
+      { "devch": 23, "type": "WL760NM", "unit": "V" },
+      { "devch": 24, "type": "WL760NM", "unit": "V" },
+      { "devch": 25, "type": "WL760NM", "unit": "V" },
+      { "devch": 26, "type": "WL760NM", "unit": "V" },
+
       { "devch":  1, "type": "WL850NM", "unit": "V" },
       { "devch":  2, "type": "WL850NM", "unit": "V" },
       { "devch":  3, "type": "WL850NM", "unit": "V" },
@@ -46,7 +52,13 @@
       { "devch": 18, "type": "WL850NM", "unit": "V" },
       { "devch": 19, "type": "WL850NM", "unit": "V" },
       { "devch": 20, "type": "WL850NM", "unit": "V" },
-
+      { "devch": 21, "type": "WL850NM", "unit": "V" },
+      { "devch": 22, "type": "WL850NM", "unit": "V" },
+      { "devch": 23, "type": "WL850NM", "unit": "V" },
+      { "devch": 24, "type": "WL850NM", "unit": "V" },
+      { "devch": 25, "type": "WL850NM", "unit": "V" },
+      { "devch": 26, "type": "WL850NM", "unit": "V" },
+        
       { "devch":  1, "type": "HbO",     "unit": "μmol/L" },
       { "devch":  2, "type": "HbO",     "unit": "μmol/L" },
       { "devch":  3, "type": "HbO",     "unit": "μmol/L" },
@@ -67,7 +79,13 @@
       { "devch": 18, "type": "HbO",     "unit": "μmol/L" },
       { "devch": 19, "type": "HbO",     "unit": "μmol/L" },
       { "devch": 20, "type": "HbO",     "unit": "μmol/L" },
-      
+      { "devch": 21, "type": "HbO",     "unit": "μmol/L" },
+      { "devch": 22, "type": "HbO",     "unit": "μmol/L" },
+      { "devch": 23, "type": "HbO",     "unit": "μmol/L" },
+      { "devch": 24, "type": "HbO",     "unit": "μmol/L" },
+      { "devch": 25, "type": "HbO",     "unit": "μmol/L" },
+      { "devch": 26, "type": "HbO",     "unit": "μmol/L" },
+        
       { "devch":  1, "type": "HbR",     "unit": "μmol/L" },
       { "devch":  2, "type": "HbR",     "unit": "μmol/L" },
       { "devch":  3, "type": "HbR",     "unit": "μmol/L" },
@@ -87,7 +105,23 @@
       { "devch": 17, "type": "HbR",     "unit": "μmol/L" },
       { "devch": 18, "type": "HbR",     "unit": "μmol/L" },
       { "devch": 19, "type": "HbR",     "unit": "μmol/L" },
-      { "devch": 20, "type": "HbR",     "unit": "μmol/L" }
+      { "devch": 20, "type": "HbR",     "unit": "μmol/L" },
+      { "devch": 21, "type": "HbR",     "unit": "μmol/L" },
+      { "devch": 22, "type": "HbR",     "unit": "μmol/L" },
+      { "devch": 23, "type": "HbR",     "unit": "μmol/L" },
+      { "devch": 24, "type": "HbR",     "unit": "μmol/L" },
+      { "devch": 25, "type": "HbR",     "unit": "μmol/L" },
+      { "devch": 26, "type": "HbR",     "unit": "μmol/L" }
     ]
-  } 
+  },
+    "channel_map": {
+        "long_channels": {
+            "HbO":  [5, 6, 10, 11, 13, 15, 20, 21],
+            "HbR": []
+        },
+        "short_channels": {
+            "HbO": [3, 7, 9, 12, 16, 19, 23, 26],
+            "HbR": []
+        }
+    }
 }

@@ -34,6 +34,7 @@ classdef selectchannels < handle
     properties (Access = private)
         selected_    uint32 = [];
         SSselected_  uint32 = [];
+        visibleIdx  uint32 = [];    % maps each visible row → absolute LSL index
 
         hFig           matlab.ui.Figure;
         hRequiredPanel matlab.ui.container.Panel;
@@ -101,27 +102,41 @@ classdef selectchannels < handle
             if isempty(self.hFig) || ~isvalid(self.hFig)
                 return;
             end
-            global mylsl mydevices;
+            % build the list of *absolute* LSL indices that pass your filter
+            global mydevices
+            
             allCh = mydevices.selected.lsl.channels;
-            rows  = cell(0, 6);
-            for idx = 1:mylsl.lslchannels
-                if idx <= numel(allCh) && self.isChannelVisible(allCh(idx))
-                    nf  = ismember(idx, self.selected_);
-                    ss  = ismember(idx, self.SSselected_);
-                    ch  = allCh(idx);
-                    rows(end+1, :) = { ...
-                        logical(nf), ...   % NF (checkbox)
-                        idx, ...           % LSL CH index
-                        ch.devch, ...      % DEV CH
-                        char(ch.type), ... % TYPE
-                        char(ch.unit), ... % UNIT
-                        logical(ss) ...    % SS (checkbox)
-                    };
+            vis   = uint32([]);
+            for idx = 1:numel(allCh)
+                if self.isChannelVisible(allCh(idx))
+                    vis(end+1) = idx;
                 end
             end
+            self.visibleIdx = vis;
+        
+            % now build the table rows
+            nVis = numel(vis);
+            rows = cell(nVis,6);
+            for r = 1:nVis
+                absIdx = vis(r);
+                ch     = allCh(absIdx);
+                nf     = ismember(absIdx, self.selected_);
+                ss     = ismember(absIdx, self.SSselected_);
+                rows(r,:) = {
+                    logical(nf), ...   % NF checkbox
+                    r, ... % the row number
+                    ch.devch,   ...   % DEV CH
+                    char(ch.type), ...
+                    char(ch.unit), ...
+                    logical(ss)      % SS checkbox
+                };
+            end
+        
             self.hChannels.Data = rows;
+            % refresh the panel title
             self.hChannelsPanel.Title = sprintf('NF: %d  |  SS: %d', ...
                 numel(self.selected_), numel(self.SSselected_));
+            % and re‐validate everything
             self.updateOK();
         end
 
@@ -392,72 +407,84 @@ classdef selectchannels < handle
 
         %% UI sanity check
         function ok = validateUISelection(self)
-            if isempty(self.hChannels) || ~isvalid(self.hChannels)
-                ok = true;
-                return;
-            end
-
-            totalCh = size(self.hChannels.Data,1);
-            sel     = self.selected_;
-            ss      = self.SSselected_;
-
-            ok1 = ~isempty(sel) && all(sel >= 1 & sel <= totalCh);
-            ok2 = isempty(ss)   || all(ss >= 1 & ss <= totalCh);
-            ok3 = (numel(sel) + numel(ss)) <= totalCh;
-
+            global mydevices
+            nlsl = numel(mydevices.selected.lsl.channels);  
+        
+            sel = self.selected_;
+            ss  = self.SSselected_;
+        
+            ok1 = ~isempty(sel) && all(sel   >=1 & sel   <= nlsl);
+            ok2 = isempty(ss)    || all(ss    >=1 & ss    <= nlsl);
+            ok3 = isempty(intersect(sel, ss));  % no channel both long & short
+        
             ok = ok1 && ok2 && ok3;
         end
 
         %% Protocol + UI validity & styling
-        function updateOK(self)
+         function updateOK(self)
             global myprotocols mydevices;
+            % get per‐type requirements for NF
             reqs   = myprotocols.selected.fh.requires().channels;
+            % all LSL channels
             lslchs = mydevices.selected.lsl.channels;
-            sel    = intersect(self.selected_, 1:numel(lslchs));
-            ss     = intersect(self.SSselected_,1:numel(lslchs));
-            self.isok = ~isempty(sel);
-
-            % Update SEL_NF counts
+            % only keep valid indices
+            sel    = intersect(self.selected_,   1:numel(lslchs));
+            ss     = intersect(self.SSselected_, 1:numel(lslchs));
+    
+            % ——— 1) Update SEL_NF (col 3) ———
+            self.isok = true;
             for i = 1:numel(reqs)
-                r     = reqs(i);
+                r = reqs(i);
+                % how many of the SELECTED NF match this type/unit?
                 types = string({lslchs(sel).type});
                 units = string({lslchs(sel).unit});
-                cnt   = sum(types == string(r.type) & units == string(r.unit));
-                bg    = self.hStyleOk;
+                cnt   = sum(types==string(r.type) & units==string(r.unit));
+                % pick red/green style
+                bg = self.hStyleOk;
                 if cnt < r.min || cnt > r.max
                     bg = self.hStyleNotOk;
                     self.isok = false;
                 end
                 if isvalid(self.hRequired)
-                    self.hRequired.Data{i,3} = cnt;
+                    self.hRequired.Data{i,3} = cnt;             % SEL_NF
                     addStyle(self.hRequired, bg, 'cell', [i,3]);
                 end
             end
-
-            % Update SEL_SS counts
+    
+            % ——— 2) Update SEL_SS (col 8) ———
             self.SSisok = true;
-            for i = 1:numel(reqs)
-                r = reqs(i);
-                if isfield(r,'SSchannels') && ~isempty(r.SSchannels)
-                    types = string({lslchs(ss).type});
-                    units = string({lslchs(ss).unit});
-                    cnt   = sum(types == string(r.type) & units == string(r.unit));
-                    bg    = self.hStyleOk;
-                    if cnt < r.SSchannels.min || cnt > r.SSchannels.max
-                        bg = self.hStyleNotOk;
-                        self.SSisok = false;
-                    end
-                    if isvalid(self.hRequired)
-                        self.hRequired.Data{i,7} = cnt;
-                        addStyle(self.hRequired, bg, 'cell', [i,7]);
+            rootReq = myprotocols.selected.fh.requires();  % the top‐level struct
+            if isfield(rootReq,'SSchannels')
+                for i = 1:numel(rootReq.SSchannels)
+                    ssr = rootReq.SSchannels(i);               % has .min/.max
+                    if ~isempty(ssr)
+                        types = string({lslchs(ss).type});
+                        units = string({lslchs(ss).unit});
+                        cnt   = sum(types==string(reqs(i).type) & units==string(reqs(i).unit));
+                        bg    = self.hStyleOk;
+                        if cnt < ssr.min || cnt > ssr.max
+                            bg = self.hStyleNotOk;
+                            self.SSisok = false;
+                        end
+                        if isvalid(self.hRequired)
+                            self.hRequired.Data{i,8} = cnt;     % SEL_SS
+                            addStyle(self.hRequired, bg, 'cell', [i,8]);
+                        end
                     end
                 end
             end
-
+    
+            % ——— 3) Enable/disable OK button ———
             uiok = self.validateUISelection();
             if ~isempty(self.hButton) && isvalid(self.hButton)
-                self.hButton.Enable = matlab.lang.OnOffSwitchState(...
-                    self.isok && self.SSisok && uiok);
+                self.hButton.Enable = matlab.lang.OnOffSwitchState( ...
+                    self.isok && self.SSisok && uiok );
+            end
+    
+            % ——— 4) Refresh bottom‐panel title (“NF: x  |  SS: y”) ———
+            if isvalid(self.hChannelsPanel)
+                self.hChannelsPanel.Title = sprintf('NF: %d  |  SS: %d', ...
+                    numel(sel), numel(ss));
             end
         end
 
@@ -467,11 +494,17 @@ classdef selectchannels < handle
             nf = uint32([]);
             ss = uint32([]);
             for r = 1:size(T,1)
-                if T{r,1}, nf(end+1) = uint32(T{r,2}); end
-                if T{r,6}, ss(end+1) = uint32(T{r,2}); end
+                if T{r,1}           % NF column
+                    nf(end+1) = self.visibleIdx(r);
+                end
+                if T{r,6}           % SS column
+                    ss(end+1) = self.visibleIdx(r);
+                end
             end
-            self.selected   = nf;
-            self.SSselected = ss;
+            % now both JSON‐preselect and manual ticks feed the same vectors:
+            self.selected_   = nf;
+            self.SSselected_ = ss;
+            self.updateOK();
         end
 
         %% OK button callback
