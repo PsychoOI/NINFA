@@ -126,8 +126,8 @@ classdef lsl < handle
         end
         
         function update(self)
-            % Early exit if we haven't opened a stream or chosen channels
-            if isempty(self.inlet) || isempty(self.channels)
+            % Early exit if we haven't opened a stream
+            if isempty(self.inlet)
                 return
             end
         
