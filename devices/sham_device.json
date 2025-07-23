@@ -56,6 +56,7 @@
       { "devch": 48, "type": "WL760NM", "unit": "V" },
       { "devch": 49, "type": "WL760NM", "unit": "V" },
       { "devch": 50, "type": "WL760NM", "unit": "V" },
+      { "devch": 51, "type": "WL760NM", "unit": "V" },
       { "devch": 52, "type": "WL760NM", "unit": "V" },
 
       { "devch":  1, "type": "WL850NM", "unit": "V" },
