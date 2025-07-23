@@ -56,6 +56,7 @@
       { "devch": 48, "type": "WL760NM", "unit": "V" },
       { "devch": 49, "type": "WL760NM", "unit": "V" },
       { "devch": 50, "type": "WL760NM", "unit": "V" },
+      { "devch": 51, "type": "WL760NM", "unit": "V" },
       { "devch": 52, "type": "WL760NM", "unit": "V" },
 
       { "devch":  1, "type": "WL850NM", "unit": "V" },
@@ -81,7 +82,7 @@
       { "devch": 21, "type": "WL850NM", "unit": "V" },
       { "devch": 22, "type": "WL850NM", "unit": "V" },
       { "devch": 23, "type": "WL850NM", "unit": "V" },
-      { "devch": 24, "type": "WL850NM", "unit": "V" },
+      { "devch": 24, "type": "WL850NM", "unit": "V" },        
       { "devch": 25, "type": "WL850NM", "unit": "V" },
       { "devch": 26, "type": "WL850NM", "unit": "V" },
       { "devch": 27, "type": "WL850NM", "unit": "V" },
