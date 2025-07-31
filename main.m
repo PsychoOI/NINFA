@@ -142,8 +142,6 @@ function onSessionWindow(src, ~)
 
     % clamp the normalized feedback, send it to the UI/session
     normFb = min(max(normFb, 0.0), 1.0);
-    fprintf("DEBUG [onSessionWindow] sample=%d  raw=%.3f  norm=%.3f\n", ...
-            src.idx, rawFb, normFb);
     myfeedback.setFeedback(normFb);
     src.pushFeedback(rawFb, normFb, span);
     

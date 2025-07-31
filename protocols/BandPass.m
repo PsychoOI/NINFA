@@ -35,7 +35,7 @@ function init()
 end
 
 % EXECUTED FOR EACH SLIDING WINDOW
-function r = process(...
+function [rawFeedback, normFeedback] = process(...
     marker, samplerate, samplenum, data, SSdata, ...
     windownum, window, SSwindow, isfullwindow, ...
     prevfeedback, prevmarker)
@@ -58,7 +58,8 @@ function r = process(...
     EXPECTED_MIN_DIFF  = -0.4;
     EXPECTED_MAX_DIFF  =  0.4;
     
-    r    = 0.5;   % default return
+    normFeedback = 0.5;
+    rawFeedback = 0.0;
     tick = tic(); % start time of execution
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -118,14 +119,13 @@ function r = process(...
         mean_hbo = mean(mean(DataFilt,1));
 
         % feedback is difference in HbO scaled by correction
-        feedback = mean_hbo - RestValue;
-        feedback = feedback * Correction;
+        rawFeedback = (mean_hbo - RestValue) * Correction;
         
         % convert from expected range to [0,1] using
         % r = (((X-a)*(d-c)) / (b-a)) + c 
         % (a, b) = initial interval 
         % (c, d) = final interval
-        r = (((feedback-EXPECTED_MIN_DIFF)*(1.0-0.0)) / ...
+        normFeedback = (((rawFeedback-EXPECTED_MIN_DIFF)*(1.0-0.0)) / ...
             (EXPECTED_MAX_DIFF-EXPECTED_MIN_DIFF)) + 0.0;
     end
     
@@ -140,7 +140,7 @@ function r = process(...
         "| window="   + sprintf('%05d', windownum) + " " + ...
         "| marker="   + sprintf('%02d', marker)    + " " + ...
         "| duration=" + sprintf('%.3f', span)+"s"  + " " + ...
-        "| feedback=" + sprintf('%.3f', r)         + " ";
+        "| normFB=" + sprintf('%.3f', normFeedback)         + " ";
     
     % add values for marker=3
     if marker == 3
@@ -181,7 +181,7 @@ function finish(session)
     % Plotting Feedback values
     nplot = nplot + 1;
     subplot(nplots,1,nplot);
-    plot(session.feedback(:,1));
+    plot(session.normFeedback(:,1));
     title('Feedback');
     
     % Plotting Marker Values

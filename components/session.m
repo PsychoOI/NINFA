@@ -193,8 +193,6 @@ classdef session < handle
             end
             if self.marker ~= oldMarker
                 notify(self, 'Epoch');
-                 fprintf("DEBUG: Epoch change at t=%.2f s — fbvisible now %d\n", ...
-                    self.length, self.fbvisible);
             end
             
             % Stop when data buffer is full
@@ -293,8 +291,6 @@ classdef session < handle
         %% Push a new feedback to running session
         function pushFeedback(self, rawVal, normVal, span)
             if ~self.running, return; end
-            fprintf("DEBUG [session.pushFeedback] idx=%d  raw=%.3f  norm=%.3f\n", ...
-                self.idx, rawVal, normVal);
             % store the un‑scaled (raw) feedback
             self.rawFeedback(self.idx)  = rawVal;
             % store the scaled [0–1] feedback
@@ -321,7 +317,7 @@ classdef session < handle
             export.stoptime   = datetime(self.stoptime,'ConvertFrom','datenum');
             export.duration   = self.length;
             export.windowsize = self.windowsize;
-            export.runType    = self.runType(1:used);
+            export.runType    = cellstr( self.runType(1:used));
             
             % Export NF data
             types = fieldnames(self.data);

@@ -60,6 +60,7 @@ function [rawFeedback, normFeedback] = process(...
     EXPECTED_MAX_DIFF  =  0.4;
     
     normFeedback = 0.5;
+    rawFeedback = 0.0;
     tick = tic(); % start time of execution
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
