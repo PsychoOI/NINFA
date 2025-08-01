@@ -224,10 +224,28 @@ classdef session < handle
             if self.windowidx < self.windowsize
                 self.windowidx = self.windowidx + 1;
             else
-                for t = fieldnames(self.window)'
-                    self.window.(t{1}) = circshift(self.window.(t{1}), -1);
-                    self.SSwindow.(t{1}) = circshift(self.SSwindow.(t{1}), -1);
+                 % — Debug: print before shifting —
+                fprintf('Rolling window #%d (full):\n', self.windownum);
+                fprintf('  NF fields:  %s\n', strjoin(fieldnames(self.window), ', '));
+                fprintf('  SS fields:  %s\n', strjoin(fieldnames(self.SSwindow), ', '));
+
+                 % — Shift NF window independently —
+                for fn = fieldnames(self.window)'
+                    self.window.(fn{1}) = circshift(self.window.(fn{1}), -1);
                 end
+            
+                % — Shift SS window independently (no-op if no SS fields) —
+                for fn = fieldnames(self.SSwindow)'
+                    self.SSwindow.(fn{1}) = circshift(self.SSwindow.(fn{1}), -1);
+                end
+                % — Debug: confirm after shifting —
+                fprintf('  After roll, first row of each NF buffer:\n');
+                for fn = fieldnames(self.window)'
+                    col = self.window.(fn{1})(1,:);
+                    fprintf('    %s: [%s]\n', fn{1}, num2str(col));
+                end
+            
+                % — Shift the time-vector —
                 self.windowtimes = circshift(self.windowtimes, -1);
             end
             
