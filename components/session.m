@@ -29,7 +29,8 @@ classdef session < handle
         windowtimes double  = zeros(0,1);   % current window times
         windowidx   uint32  = 0;            % current index in window
         windownum   uint32  = 1;            % current window number
-        feedback    double  = zeros(0,1);   % recorded feedbacks
+        normFeedback double  = zeros(0,1);   % recorded *normalized* feedback [0–1]
+        rawFeedback  double  = zeros(0,1);   % recorded *raw* feedback (e.g. HbO difference)
         markerinfo  double  = zeros(0,7);   % info about epochs
         markers     double  = zeros(0,1);   % recorded epochs
         marker      double  = 0.0;          % current epoch (0 = undefined)
@@ -38,6 +39,7 @@ classdef session < handle
         study       string  = "";           % name of study
         subject     uint32  = 1;            % subject number
         run         uint32  = 1;            % run number
+        runType     categorical;            % per‐sample: "feedback" or "transfer"
     end
     
     events
@@ -101,6 +103,10 @@ classdef session < handle
             self.device      = device;
             self.channels    = channels;
             self.SSchannels  = SSchannels;
+            % initialize everything as “transfer”
+            self.runType    = categorical( ...
+                                repmat("transfer", self.datasize,1), ...
+                                ["feedback","transfer"]);
             counts   = self.countChannelTypes();
             SScounts = self.countSSChannelTypes();
             
@@ -126,7 +132,8 @@ classdef session < handle
             
             % Initialize time and marker arrays
             self.times       = zeros(self.datasize, 1);
-            self.feedback    = zeros(self.datasize, 1);
+            self.normFeedback = zeros(self.datasize, 1);
+            self.rawFeedback  = zeros(self.datasize, 1);
             self.markers     = zeros(self.datasize, 1);
             self.markerinfo  = markerinfo;
             self.windowtimes = zeros(self.windowsize, 1);
@@ -200,6 +207,14 @@ classdef session < handle
             
             % Increment index
             self.idx = self.idx + 1;
+
+            % record run‑type per sample as categorical
+            if self.fbvisible
+                self.runType(self.idx) = "feedback";
+            else
+                self.runType(self.idx) = "transfer";
+            end
+
             if self.firsttime == 0
                 self.firsttime = ts;
             end
@@ -209,10 +224,16 @@ classdef session < handle
             if self.windowidx < self.windowsize
                 self.windowidx = self.windowidx + 1;
             else
-                for t = fieldnames(self.window)'
-                    self.window.(t{1}) = circshift(self.window.(t{1}), -1);
-                    self.SSwindow.(t{1}) = circshift(self.SSwindow.(t{1}), -1);
+                % Shift NF window
+                for fn = fieldnames(self.window)'
+                    self.window.(fn{1}) = circshift(self.window.(fn{1}), -1);
                 end
+            
+                % Shift SS window 
+                for fn = fieldnames(self.SSwindow)'
+                    self.SSwindow.(fn{1}) = circshift(self.SSwindow.(fn{1}), -1);
+                end
+                % Shift the time-vector
                 self.windowtimes = circshift(self.windowtimes, -1);
             end
             
@@ -274,9 +295,13 @@ classdef session < handle
         end
         
         %% Push a new feedback to running session
-        function pushFeedback(self, v, span)
+        function pushFeedback(self, rawVal, normVal, span)
             if ~self.running, return; end
-            self.feedback(self.idx) = v;
+            % store the un‑scaled (raw) feedback
+            self.rawFeedback(self.idx)  = rawVal;
+            % store the scaled [0–1] feedback
+            self.normFeedback(self.idx) = normVal;
+            % protocol timing book‑keeping remains the same
             self.protocolsum  = self.protocolsum + span;
             self.protocolavg  = self.protocolsum / double(self.idx);
             self.protocolmax  = max(self.protocolmax, span);
@@ -298,6 +323,7 @@ classdef session < handle
             export.stoptime   = datetime(self.stoptime,'ConvertFrom','datenum');
             export.duration   = self.length;
             export.windowsize = self.windowsize;
+            export.runType    = cellstr( self.runType(1:used));
             
             % Export NF data
             types = fieldnames(self.data);
@@ -317,7 +343,8 @@ classdef session < handle
             
             export.times       = self.times(1:used);
             export.windowtimes = self.windowtimes(1:min(self.windowidx,self.windowsize));
-            export.feedback    = self.feedback(1:used);
+            export.rawFeedback  = self.rawFeedback(1:used);
+            export.normFeedback = self.normFeedback(1:used);
             export.markers     = self.markers(1:used);
             
             % Choose study name or default to "unnamed"

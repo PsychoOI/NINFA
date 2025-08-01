@@ -18,8 +18,9 @@ function init()
 end
 
 % EXECUTED FOR EACH SLIDING WINDOW
-function r = process(~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~)
-    r = 0.0;
+function [rawFeedback, normFeedback] = process(~, ~, ~, ~, ~, ~, ~, ~, ~, ~, ~)
+    rawFeedback = 0.0;
+    normFeedback = 0.0;
 end
 
 % EXECUTED AT THE END OF THE SESSION
@@ -43,7 +44,7 @@ function finish(session)
     
     % Plotting Feedback values
     subplot(nplots,1,nchannels+1);
-    plot(session.feedback(:,1));
+    plot(session.normFeedback(:,1));
     title('Feedback');
     % Plotting Marker Values
     subplot(nplots,1,nchannels+2);
