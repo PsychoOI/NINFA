@@ -1,5 +1,5 @@
 {
-  "name": "raph_sham_device",
+  "name": "sham_device",
   "type": "NIRS",
   "lsl": {
     "type": "NIRS",
@@ -225,7 +225,7 @@
             "HbR": []
         },
         "short_channels": {
-            "HbO": [36],
+            "HbO": [],
             "HbR": []
         }
     }
