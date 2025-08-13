@@ -104,12 +104,12 @@ classdef selectchannels < handle
             end
             % build the list of *absolute* LSL indices that pass your filter
             global mydevices
-            
             allCh = mydevices.selected.lsl.channels;
-            vis   = uint32([]);
+        
+            vis = uint32([]);
             for idx = 1:numel(allCh)
                 if self.isChannelVisible(allCh(idx))
-                    vis(end+1) = idx;
+                    vis(end+1) = idx; %#ok<AGROW>
                 end
             end
             self.visibleIdx = vis;
@@ -118,27 +118,39 @@ classdef selectchannels < handle
             nVis = numel(vis);
             rows = cell(nVis,6);
             for r = 1:nVis
-                absIdx = vis(r);
+                absIdx = vis(r);          % absolute index in full LSL list
                 ch     = allCh(absIdx);
                 nf     = ismember(absIdx, self.selected_);
                 ss     = ismember(absIdx, self.SSselected_);
                 rows(r,:) = {
-                    logical(nf), ...   % NF checkbox
-                    r, ... % the row number
-                    ch.devch,   ...   % DEV CH
+                    logical(nf), ...       % NF checkbox
+                    absIdx,       ...      % LSL CH = absolute LSL index (FIXED)
+                    ch.devch,     ...      % DEV CH (device numbering)
                     char(ch.type), ...
                     char(ch.unit), ...
-                    logical(ss)      % SS checkbox
+                    logical(ss)            % SS checkbox
                 };
             end
         
             self.hChannels.Data = rows;
+        
+            % regression guard: UI LSL column must equal visibleIdx
+            try
+                shown = cell2mat(self.hChannels.Data(:,2));
+                if ~isequal(double(self.visibleIdx(:)), double(shown(:)))
+                    warning('LSL CH column mismatch: UI not showing absolute LSL indices.');
+                end
+            catch
+                % ignore if table is mid-build
+            end
+        
             % refresh the panel title
             self.hChannelsPanel.Title = sprintf('NF: %d  |  SS: %d', ...
                 numel(self.selected_), numel(self.SSselected_));
             % and re‐validate everything
             self.updateOK();
         end
+
 
         %% Try JSON‐based preselection (no effect if UI is closed)
         function preselectFromDeviceJSON(self)
@@ -153,12 +165,17 @@ classdef selectchannels < handle
                isnumeric(map.short_channels) && isempty(map.short_channels)
                 return;
             end
-
+        
             try
-                % Validate map, then pull long/short indices from device
+                % Validate the JSON against device channels
                 self.validateChannelMap(map, dev.lsl.channels);
-                self.selected   = mydevices.getLongChannelIndices();
-                self.SSselected = mydevices.getShortChannelIndices();
+        
+                % Convert JSON device IDs (HbO/HbR) to absolute LSL indices
+                [longIdx, shortIdx] = self.devjson_to_lsl_indices(map, dev.lsl.channels);
+        
+                % Store as absolute indices (what the UI and logic use)
+                self.selected   = longIdx;
+                self.SSselected = shortIdx;
             catch ME
                 userMsg    = strrep(ME.message, newline, ' ');
                 dialogTitle = 'Channel Map Error';
@@ -271,10 +288,12 @@ classdef selectchannels < handle
     methods (Access = private)
         %% Return true if that channel’s type/unit shows up in REQUIRED table
         function r = isChannelVisible(self, ch)
-            if isempty(self.hRequired.Data)
-                r = true;
+            % If REQUIRED table not ready, fallback to HbO/HbR-only selector
+            if isempty(self.hRequired) || ~isvalid(self.hRequired) || isempty(self.hRequired.Data)
+                r = strcmp(ch.type,'HbO') || strcmp(ch.type,'HbR');
                 return;
             end
+            % Otherwise, use REQUIRED-type filtering
             D = self.hRequired.Data;
             for i = 1:size(D,1)
                 if strcmp(D{i,4}, ch.type) && strcmp(D{i,5}, ch.unit)
@@ -284,6 +303,7 @@ classdef selectchannels < handle
             end
             r = false;
         end
+
 
         %% Flatten struct or flat vector into a column of IDs
         function ids = collectIDs(~, x)
@@ -515,6 +535,46 @@ classdef selectchannels < handle
             end
             notify(self, 'Done');
             self.close();
+        end
+
+        function [longLSL, shortLSL] = devjson_to_lsl_indices(self, map, allCh)
+            % Convert JSON dev channel lists (per type) into absolute LSL indices.
+            % Only HbO/HbR are considered (UI design).
+            longLSL  = uint32([]);
+            shortLSL = uint32([]);
+        
+            % Ensure allCh is a flat struct array
+            if iscell(allCh), allCh = vertcat(allCh{:}); end
+        
+            % Local helper to add matches from a map branch into a target vector
+            function addFromBranch(branch, which) % which = 'long' or 'short'
+                if ~isstruct(branch), return; end
+                for wantedType = ["HbO","HbR"]
+                    t = char(wantedType);
+                    if ~isfield(branch, t), continue; end
+                    devIDs = branch.(t);
+                    if isempty(devIDs), continue; end
+                    for d = devIDs(:)'
+                        idx = find(arrayfun(@(c) strcmp(c.type,t) && c.devch==d, allCh), 1, 'first');
+                        if ~isempty(idx)
+                            if strcmp(which,'long')
+                                longLSL(end+1) = uint32(idx); %#ok<AGROW>
+                            else
+                                shortLSL(end+1) = uint32(idx); %#ok<AGROW>
+                            end
+                        else
+                            warning('No LSL channel found for (%s, devch=%d).', t, d);
+                        end
+                    end
+                end
+            end
+        
+            addFromBranch(map.long_channels,  'long');
+            addFromBranch(map.short_channels, 'short');
+        
+            % Keep order stable and remove duplicates just in case
+            longLSL  = unique(longLSL,  'stable');
+            shortLSL = unique(shortLSL, 'stable');
         end
     end
 
