@@ -114,6 +114,15 @@ end
 function onSessionWindow(src, ~)
     global myfeedback;
     global myprotocols;
+    global myselectchannels;
+
+    % print when NF/SS selections change
+    nf = myselectchannels.selected;     % long channels (indices)
+    ss = myselectchannels.SSselected;   % short channels (indices)
+
+    fprintf('NF idx: [%s]\n', strjoin(string(nf), ', '));
+    fprintf('SS idx: [%s]\n', strjoin(string(ss), ', '));
+
 
     prevNormFb  = 0.5;
     if src.idx > 1
