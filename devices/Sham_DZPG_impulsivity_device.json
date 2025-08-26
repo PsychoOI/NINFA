@@ -1,5 +1,5 @@
 {
-  "name": "DZPG_impulsivity_device",
+  "name": "Sham_DZPG_impulsivity_device",
   "type": "NIRS",
   "lsl": {
     "type": "NIRS",
@@ -217,11 +217,11 @@
   },
     "channel_map": {
         "long_channels": {
-            "HbO":  [16, 20, 21, 22, 34, 35, 37, 46],
+            "HbO":  [4, 9, 18, 24, 32, 39, 43, 47],
             "HbR": []
         },
         "short_channels": {
-            "HbO": [4, 9, 18, 24, 32, 39, 43, 47],
+            "HbO": [],
             "HbR": []
         }
     }

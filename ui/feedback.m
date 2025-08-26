@@ -10,7 +10,9 @@ classdef feedback < handle
     % Modes:
     %   - hidden: nothing visible
     %   - frameOnly : show axes + grid lines, hide both bars (for transfer)
+    %   - neutral: 
     %   - live  : axes + lines + bars visible; bars update with value
+    %   
 
     properties(Constant)
         figwidth  = 512; % window width (px)
@@ -28,11 +30,14 @@ classdef feedback < handle
     end
 
     properties (Access = private)
-        mode     (1,1) string = "hidden";   % "hidden" | "frameOnly" | "live"
+        mode     (1,1) string = "hidden";    % "hidden" | "neutral" | "frameOnly"(alias) | "live"
         lastValue (1,1) double = 0.5;        % Cached normalized value
     end
     
     methods
+        function m = getMode(self)
+            m = self.mode;
+        end
         function self = feedback()
             % Constructor: build the window & plot objects, then show the window
             % with content initially hidden.
@@ -131,6 +136,10 @@ classdef feedback < handle
             % If we are in live mode, (re)draw bars to reflect lastValue
             if self.mode == "live"
                 self.renderValue_(self.lastValue);
+
+            % If in neutral, always dray 0.5
+            elseif self.mode == "neutral"
+                self.renderValue_(0.5);
             end
         end
 
@@ -141,7 +150,16 @@ classdef feedback < handle
             % Backward-compatible: update bar heights only.
             % No visibility changes, no clamping here.
             self.lastValue = double(v);
-            self.renderValue_(self.lastValue);   % draws even if currently hidden
+            switch self.mode
+                case "live"
+                    self.renderValue_(self.lastValue);
+                case "neutral"
+                    % Never reveal the true value in transfer: pin to 0.5
+                    self.renderValue_(0.5);
+                otherwise
+                    % hidden or anything else: don't draw
+                    return;
+            end
         end
     end
 
@@ -160,6 +178,13 @@ classdef feedback < handle
                     self.setVis_(self.hAxes,    'on');
                     self.setVis_(self.hBarRed,  'off');
                     self.setVis_(self.hBarBlue, 'off');
+                    self.setLinesVis_('on');
+
+                case "neutral"
+                    % % Transfer & visible → show bars, but fixed at 0.5
+                    self.setVis_(self.hAxes,'on');
+                    self.setVis_(self.hBarRed,'on');
+                    self.setVis_(self.hBarBlue,'on');
                     self.setLinesVis_('on');
 
                 case "live"

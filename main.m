@@ -107,20 +107,14 @@ function onSessionEpoch(src, ~)
 
     % decide visualization mode
     
-    isVisible = isfield(src, 'fbvisible') && logical(src.fbvisible);
-    isTransfer = isfield(src, 'transfer') && logical(src.transfer);
-
-    fprintf('[Epoch] marker=%d, visible=%d, transfer=%d -> mode=%s\n', ...
-    src.marker, ...
-    isVisible, ...
-    isTransfer, ...
-    myfeedback.mode);
+    isVisible = isprop(src, 'fbvisible') && logical(src.fbvisible);
+    isTransfer = isprop(src, 'transfer') && logical(src.transfer);
 
     if ~isVisible
         myfeedback.setMode("hidden");
     elseif isTransfer
         % Show thermometer frame only (no moving bars)
-        myfeedback.setMode("frameOnly");
+        myfeedback.setMode("neutral");
     else
         % Normal neurofeedback (moving bars)
         myfeedback.setMode("live");
@@ -130,15 +124,6 @@ end
 function onSessionWindow(src, ~)
     global myfeedback;
     global myprotocols;
-    global myselectchannels;
-
-    % print when NF/SS selections change
-    nf = myselectchannels.selected;     % long channels (indices)
-    ss = myselectchannels.SSselected;   % short channels (indices)
-
-    fprintf('NF idx: [%s]\n', strjoin(string(nf), ', '));
-    fprintf('SS idx: [%s]\n', strjoin(string(ss), ', '));
-
 
     prevNormFb  = 0.5;
     if src.idx > 1

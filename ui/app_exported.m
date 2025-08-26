@@ -73,9 +73,9 @@ classdef app_exported < matlab.apps.AppBase
     end
     
     properties (Constant)
-        idxred   uint32 = 5;
-        idxgreen uint32 = 6;
-        idxblue  uint32 = 7;
+        idxred   uint32 = 6;
+        idxgreen uint32 = 7;
+        idxblue  uint32 = 8;
     end
     
     methods (Access = private)
@@ -512,7 +512,7 @@ classdef app_exported < matlab.apps.AppBase
         end
 
         % Button pushed function: COLORButton
-        function COLORButtonPushed(app, event)
+        function COLORButtonPushed(app, ~)
             c = uisetcolor([0 0 0]);
             rows = app.MARKERTable.Selection;         
             for r = rows

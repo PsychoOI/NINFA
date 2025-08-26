@@ -31,7 +31,7 @@ classdef session < handle
         windownum   uint32  = 1;            % current window number
         normFeedback double  = zeros(0,1);   % recorded *normalized* feedback [0–1]
         rawFeedback  double  = zeros(0,1);   % recorded *raw* feedback (e.g. HbO difference)
-        markerinfo  double  = zeros(0,7);   % info about epochs
+        markerinfo  double  = zeros(0,8);   % info about epochs
         markers     double  = zeros(0,1);   % recorded epochs
         marker      double  = 0.0;          % current epoch (0 = undefined)
         bgcolor     double  = [0 0 0];      % current epoch background color
@@ -39,7 +39,8 @@ classdef session < handle
         study       string  = "";           % name of study
         subject     uint32  = 1;            % subject number
         run         uint32  = 1;            % run number
-        runType     categorical;            % per‐sample: "feedback" or "transfer"
+        transfer    logical  = false; % per‐epoch: whether transfer 1 or neurofeedback 0
+        runType     categorical;      % per-sample vector, "transfer" | "neurofeedback"
     end
     
     events
@@ -104,9 +105,10 @@ classdef session < handle
             self.channels    = channels;
             self.SSchannels  = SSchannels;
             % initialize everything as “transfer”
+            self.transfer = false;
             self.runType    = categorical( ...
                                 repmat("transfer", self.datasize,1), ...
-                                ["feedback","transfer"]);
+                                ["neurofeedback","transfer"]);
             counts   = self.countChannelTypes();
             SScounts = self.countSSChannelTypes();
             
@@ -182,8 +184,9 @@ classdef session < handle
                 m = self.markerinfo(i,:);
                 if self.length >= m(1) && self.length <= m(2)
                     self.marker  = m(3);
-                    self.bgcolor = m(5:7);
-                    self.fbvisible = logical(m(4));
+                    self.transfer  = logical(m(4));
+                    self.fbvisible = logical(m(5));
+                    self.bgcolor   = m(6:8);
                     foundEpoch = true;
                     break;
                 end
@@ -208,11 +211,10 @@ classdef session < handle
             % Increment index
             self.idx = self.idx + 1;
 
-            % record run‑type per sample as categorical
-            if self.fbvisible
-                self.runType(self.idx) = "feedback";
-            else
+            if self.transfer
                 self.runType(self.idx) = "transfer";
+            else
+                self.runType(self.idx) = "neurofeedback";
             end
 
             if self.firsttime == 0
@@ -323,7 +325,7 @@ classdef session < handle
             export.stoptime   = datetime(self.stoptime,'ConvertFrom','datenum');
             export.duration   = self.length;
             export.windowsize = self.windowsize;
-            export.runType    = cellstr( self.runType(1:used));
+            export.runType = cellstr(self.runType(1:used));
             
             % Export NF data
             types = fieldnames(self.data);
