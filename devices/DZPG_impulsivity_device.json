@@ -4,7 +4,6 @@
   "lsl": {
     "type": "NIRS",
      "channels": [
-
       { "devch":  0, "type": "COUNTER", "unit": "" },
       { "devch":  1, "type": "WL760NM", "unit": "V" },
       { "devch":  2, "type": "WL760NM", "unit": "V" },
@@ -57,6 +56,8 @@
       { "devch": 49, "type": "WL760NM", "unit": "V" },
       { "devch": 50, "type": "WL760NM", "unit": "V" },
       { "devch": 51, "type": "WL760NM", "unit": "V" },
+      { "devch": 52, "type": "WL760NM", "unit": "V" },
+
 
       { "devch":  1, "type": "WL850NM", "unit": "V" },
       { "devch":  2, "type": "WL850NM", "unit": "V" },
@@ -109,6 +110,8 @@
       { "devch": 49, "type": "WL850NM", "unit": "V" },
       { "devch": 50, "type": "WL850NM", "unit": "V" },
       { "devch": 51, "type": "WL850NM", "unit": "V" },
+      { "devch": 52, "type": "WL850NM", "unit": "V" },
+
 
       { "devch":  1, "type": "HbO",     "unit": "μmol/L" },
       { "devch":  2, "type": "HbO",     "unit": "μmol/L" },
@@ -161,6 +164,8 @@
 	  { "devch": 49, "type": "HbO",     "unit": "μmol/L" },
 	  { "devch": 50, "type": "HbO",     "unit": "μmol/L" },
 	  { "devch": 51, "type": "HbO",     "unit": "μmol/L" },	  
+      { "devch": 52, "type": "HbO",     "unit": "μmol/L" },	  
+
 
       { "devch":  1, "type": "HbR",     "unit": "μmol/L" },
       { "devch":  2, "type": "HbR",     "unit": "μmol/L" },
@@ -212,17 +217,12 @@
 	  { "devch": 48, "type": "HbR",     "unit": "μmol/L" },
 	  { "devch": 49, "type": "HbR",     "unit": "μmol/L" },
 	  { "devch": 50, "type": "HbR",     "unit": "μmol/L" },
-	  { "devch": 51, "type": "HbR",     "unit": "μmol/L" }	  
+	  { "devch": 51, "type": "HbR",     "unit": "μmol/L" },
+      { "devch": 52, "type": "HbR",     "unit": "μmol/L" }
     ]
   },
     "channel_map": {
-        "long_channels": {
-            "HbO":  [16, 20, 21, 22, 34, 35, 37, 46],
-            "HbR": []
-        },
-        "short_channels": {
-            "HbO": [4, 9, 18, 24, 32, 39, 43, 47],
-            "HbR": []
-        }
+        "long_channels": { "HbO":  [7, 11, 17, 22, 28, 34, 35, 36], "HbR": []},
+        "short_channels": { "HbO": [4, 10, 19, 25, 33, 40, 44, 48], "HbR": []}
     }
 }
