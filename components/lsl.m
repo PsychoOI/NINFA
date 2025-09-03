@@ -23,6 +23,7 @@ classdef lsl < handle
         outtrigger  lsl_outlet;               % outlet for trigger
         outmarker   lsl_outlet;               % outlet for marker
         marker      double    = 0.0;          % current epoch marker
+        N           (1,1) uint32 = 0          % number of channels per block inferred from LSL
     end
     
     events
@@ -96,6 +97,20 @@ classdef lsl < handle
             if ~isempty(self.streams)
                 self.stream       = self.streams{1};
                 self.lslchannels  = self.stream.channel_count();
+                % Infer N from LSL stream (ignoring COUNTER if present)
+                if mod(self.lslchannels, 4) == 1
+                    % has COUNTER
+                    self.N = uint32((self.lslchannels - 1) / 4);
+                elseif mod(self.lslchannels, 4) == 0
+                    % no COUNTER
+                    self.N = uint32(self.lslchannels / 4);
+                else
+                    % inconsistent
+                    error('lsl:BadChannelCount', ...
+                          'LSL stream has %d channels, which cannot be split evenly into 4 blocks (+optional COUNTER).', ...
+                          self.lslchannels);
+                end
+
                 self.sratenom     = self.stream.nominal_srate();
                 self.inlet        = lsl_inlet(self.stream);
                 self.outtrigger   = lsl_outlet( ...

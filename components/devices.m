@@ -25,7 +25,8 @@ classdef devices < handle
                 'type',        "", ...
                 'lsl',         [], ...
                 'channel_map', struct('long_channels', struct(), ...
-                                      'short_channels', struct()) ...
+                                      'short_channels', struct()), ...
+                'channels_per_block', uint32(0) ...
             );
 
             self.nirs        = emptyDevice([]);  
@@ -60,6 +61,12 @@ classdef devices < handle
                 device.channel_map = struct('long_channels', struct(), ...
                                             'short_channels', struct());
             end
+            % Ensure every device has channels_per_block (default 0 if not in JSON)
+            if isfield(json,'channels_per_block')
+                device.channels_per_block = uint32(json.channels_per_block);
+            else
+                device.channels_per_block = uint32(0);
+            end
         end
 
         function ok = select(self, type, name)
@@ -83,6 +90,7 @@ classdef devices < handle
             end
             warning("Device %s of type %s not found.", name, type);
         end
+        
 
         function idxs = getLongChannelIndices(self)
             % Translate devch IDs → LSL indices (long/HbO vs HbR) 
@@ -105,7 +113,6 @@ classdef devices < handle
             end
             idxs = unique(idxs);  % sort & remove duplicates
         end
-
         function idxs = getShortChannelIndices(self)
             cm = self.selected.channel_map.short_channels;
             if ~isstruct(cm)
@@ -125,5 +132,44 @@ classdef devices < handle
             end
             idxs = unique(idxs);
         end
+        function [ok] = sanityCheckSelected(self)
+            % Simple sanity check for fNIRS device channels.
+            % Ensures HbO and HbR exist, match, and COUNTER channel is present.
+
+            ok = false;
+        
+            if isempty(self.selected) || ~isfield(self.selected,'lsl') || ~isfield(self.selected.lsl,'channels')
+                error('No selected device or channels.');
+            end
+        
+            allCh = self.selected.lsl.channels;
+            if iscell(allCh), allCh = vertcat(allCh{:}); end
+            if isempty(allCh)
+                error('Selected device has empty channel list.');
+            end
+        
+            types  = string({allCh.type});
+            devchs = double([allCh.devch]);
+        
+            n_hbo = sum(types=="HbO");
+            n_hbr = sum(types=="HbR");
+        
+            if n_hbo == 0 || n_hbr == 0
+                error('Missing HbO or HbR channels (HbO=%d, HbR=%d).', n_hbo, n_hbr);
+            end
+        
+            if n_hbo ~= n_hbr
+                error('Mismatch between HbO (%d) and HbR (%d) channel counts.', n_hbo, n_hbr);
+            end
+        
+            if ~any(types=="COUNTER" & devchs==0)
+                error('Missing COUNTER channel with devch=0.');
+            end
+        
+            % Passed
+            ok = true;
+            self.selected.channels_per_block  = uint32(n_hbo);
+        end
+
     end
 end
