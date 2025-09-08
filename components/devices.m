@@ -26,8 +26,13 @@ classdef devices < handle
                 'lsl',         [], ...
                 'channel_map', struct('long_channels', struct(), ...
                                       'short_channels', struct()), ...
-                'channels_per_block', uint32(0) ...
+                'channels_per_block', uint32(0), ...
+                'modes',       struct(), ...
+                'ui',          struct('blind_role', false), ...
+                'randomize',   false, ...
+                'default_mode', "A" ...
             );
+
 
             self.nirs        = emptyDevice([]);  
             self.eeg         = emptyDevice([]);  
@@ -35,8 +40,9 @@ classdef devices < handle
 
             files = dir(fullfile("devices","*.json"));
             for f = 1:numel(files)
-                json = jsondecode(fileread(fullfile("devices", files(f).name)));
+                json  = jsondecode(fileread(fullfile("devices", files(f).name)));
                 device = self.createDeviceStructure(json);
+
                 switch lower(json.type)
                     case 'nirs'
                         self.nirs(end+1) = device;
@@ -52,23 +58,61 @@ classdef devices < handle
         end
 
         function device = createDeviceStructure(~, json)
+            % Required basics
             device.name = json.name;
             device.type = json.type;
             device.lsl  = json.lsl;
+        
+            % Channel map (global, not per-mode)
             if isfield(json,'channel_map')
                 device.channel_map = json.channel_map;
             else
                 device.channel_map = struct('long_channels', struct(), ...
                                             'short_channels', struct());
             end
-            % Ensure every device has channels_per_block (default 0 if not in JSON)
+        
+            % Channels-per-block (optional hint for LSL sanity)
             if isfield(json,'channels_per_block')
                 device.channels_per_block = uint32(json.channels_per_block);
             else
                 device.channels_per_block = uint32(0);
             end
+        
+            % study/blinding fields from the single JSON profile
+        
+            % Modes A/B (label, role, protocol). Keep empty struct if missing.
+            if isfield(json,'modes')
+                device.modes = json.modes;
+            else
+                device.modes = struct();
+                warning('devices:createDeviceStructure:NoModes', ...
+                    'Device "%s": JSON has no "modes" object.', device.name);
+            end
+        
+            % UI flags (currently only blind_role)
+            device.ui = struct('blind_role', false);
+            if isfield(json,'ui')
+                if isfield(json.ui,'blind_role')
+                    device.ui.blind_role = logical(json.ui.blind_role);
+                end
+            end
+        
+            % Randomize flag
+            device.randomize = false;
+            if isfield(json,'randomize')
+                device.randomize = logical(json.randomize);
+            end
+        
+            % Default mode (falls back to "A" with a warning)
+            device.default_mode = "A";
+            if isfield(json,'default_mode') && ~isempty(json.default_mode)
+                device.default_mode = string(json.default_mode);
+            else
+                warning('devices:createDeviceStructure:DefaultModeMissing', ...
+                    'Device "%s": default_mode missing; defaulting to "A".', device.name);
+            end
         end
-
+        
         function ok = select(self, type, name)
             % Choose a device by type & name
             ok = false;
@@ -81,16 +125,15 @@ classdef devices < handle
                     return;
             end
             for i = 1:numel(list)
-                if list(i).name == name
+                if strcmp(char(list(i).name), char(name))   % robust to string/char
                     self.selected = list(i);
-                    disp("Selected device: " + name + " (" + type + ")");
+                    disp("Selected device: " + string(name) + " (" + string(type) + ")");
                     ok = true;
                     return;
                 end
             end
             warning("Device %s of type %s not found.", name, type);
         end
-        
 
         function idxs = getLongChannelIndices(self)
             % Translate devch IDs → LSL indices (long/HbO vs HbR) 

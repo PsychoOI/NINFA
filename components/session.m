@@ -41,7 +41,21 @@ classdef session < handle
         run         uint32  = 1;            % run number
         transfer    logical  = false; % per‐epoch: whether transfer 1 or neurofeedback 0
         runType     categorical;      % per-sample vector, "transfer" | "neurofeedback"
+        
     end
+        % Blinded-condition metadata (saved for unblinding/repro)
+    properties
+        mode_label        string  = ""   % "A" | "B"
+        mode_role         string  = ""   % "real" | "sham"
+        mode_protocol     string  = ""   % protocol chosen by mode (redundant with self.protocol; kept for clarity)
+        randomize_state   logical = false
+        default_mode_used string  = "A"
+        randseed                   = []   % [] or scalar (uint32/double)
+        json_filename     string  = ""   % which single-device profile was used
+        mode_source       string  = ""   % "default" | "randomize" | "manual"  (optional but handy)
+        mode_reason       string  = ""   % free text override reason (optional)
+    end
+
     
     events
         Started
@@ -95,7 +109,12 @@ classdef session < handle
             self.datasize   = ceil(srate * lengthmax);
             self.windowsize = ceil(srate * window);
             self.running    = true;
-            self.protocol   = protocol;
+            if strlength(self.mode_protocol) == 0
+                self.mode_protocol = self.protocol;
+            end
+            if isempty(self.default_mode_used)
+                self.default_mode_used = "A";
+            end
             self.protocolmax = 0.0;
             self.protocolavg = 0.0;
             self.protocolsum = 0.0;
@@ -326,6 +345,18 @@ classdef session < handle
             export.duration   = self.length;
             export.windowsize = self.windowsize;
             export.runType = cellstr(self.runType(1:used));
+
+            % Blinded-condition metadata
+            export.mode_label        = self.mode_label;        % "A"/"B"
+            export.mode_role         = self.mode_role;         % "real"/"sham"
+            export.mode_protocol     = self.mode_protocol;     % e.g., "MovAvg_SS"
+            export.randomize_state   = logical(self.randomize_state);
+            export.default_mode_used = self.default_mode_used; % "A" unless device JSON said otherwise
+            export.randseed          = self.randseed;          % [] unless randomized
+            export.json_filename     = self.json_filename;     % device JSON name
+            export.mode_source       = self.mode_source;       % "default"/"randomize"/"manual" (optional)
+            export.mode_reason       = self.mode_reason;       % override reason (optional)
+
             
             % Export NF data
             types = fieldnames(self.data);
