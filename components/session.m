@@ -41,19 +41,22 @@ classdef session < handle
         run         uint32  = 1;            % run number
         transfer    logical  = false; % per‐epoch: whether transfer 1 or neurofeedback 0
         runType     categorical;      % per-sample vector, "transfer" | "neurofeedback"
+        nf_channels_used uint32 = uint32([]); % Neurofeedback channels used as inputs to the algorithm
+        ss_channels_used uint32 = uint32([]); % short separation channels used as inputs to the algorithm
         
     end
         % Blinded-condition metadata (saved for unblinding/repro)
     properties
         mode_label        string  = ""   % "A" | "B"
         mode_role         string  = ""   % "real" | "sham"
-        mode_protocol     string  = ""   % protocol chosen by mode (redundant with self.protocol; kept for clarity)
+        mode_protocol     string  = ""   % protocol chosen by mode
         randomize_state   logical = false
         default_mode_used string  = "A"
         randseed                   = []   % [] or scalar (uint32/double)
         json_filename     string  = ""   % which single-device profile was used
         mode_source       string  = ""   % "default" | "randomize" | "manual"  (optional but handy)
         mode_reason       string  = ""   % free text override reason (optional)
+        sham_uses_short  logical = false
     end
 
     
@@ -109,6 +112,11 @@ classdef session < handle
             self.datasize   = ceil(srate * lengthmax);
             self.windowsize = ceil(srate * window);
             self.running    = true;
+
+            self.protocol = protocol;
+            if strlength(self.mode_protocol) == 0
+                self.mode_protocol = self.protocol;
+            end
             if strlength(self.mode_protocol) == 0
                 self.mode_protocol = self.protocol;
             end

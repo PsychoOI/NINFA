@@ -72,23 +72,24 @@ classdef lsl < handle
             % Check if protocol requires SS channels
             req = myprotocols.selected.fh.requires();
             if isfield(req, 'SSchannels')
-                % Validate SS channels
                 if isempty(SSchannels)
-                    error("Short Channels can't be empty");
+                    % Allow "no SS" at runtime (e.g., sham where shorts drive NF)
+                    self.SSchannels = [];
+                    self.SSsample   = zeros(1, 0);
+                else
+                    % Validate SS channels when provided
+                    if any(SSchannels <= 0) || any(SSchannels > self.lslchannels)
+                        error("Requested invalid short channel(s) " + mat2str(SSchannels) + ...
+                              " of " + self.lslchannels);
+                    end
+                    self.SSchannels = SSchannels;
+                    nSS = numel(SSchannels);
+                    self.SSsample = zeros(1, nSS);
                 end
-                if any(SSchannels <= 0) || any(SSchannels > self.lslchannels)
-                    error("Requested invalid short channel(s) " + mat2str(SSchannels) + ...
-                          " of " + self.lslchannels);
-                end
-                
-                % Apply SS selection
-                self.SSchannels = SSchannels;
-                nSS = numel(SSchannels);
-                self.SSsample = zeros(1, nSS);
             else
-                % No SS channels required by protocol
+                % Protocol does not require SS → none
                 self.SSchannels = [];
-                self.SSsample = zeros(1, 0);
+                self.SSsample   = zeros(1, 0);
             end
         end
         
@@ -195,7 +196,7 @@ classdef lsl < handle
         
                 % Fire event & push marker
                 notify(self, 'NewSample');
-                if isvalid(self.outmarker) && ~isempty(self.outmarker)
+                if ~isempty(self.outmarker) && isvalid(self.outmarker)
                     self.outmarker.push_sample(self.marker);
                 end
         
@@ -213,7 +214,7 @@ classdef lsl < handle
 
         
         function r = trigger(self, value)
-            if isvalid(self.outtrigger) && ~isempty(self.outtrigger) && value ~= 0
+            if ~isempty(self.outtrigger) && isvalid(self.outtrigger) && value ~= 0
                 self.outtrigger.push_sample(value);
                 r = true;
             else
