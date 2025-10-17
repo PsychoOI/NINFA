@@ -103,11 +103,12 @@ NINFA can run in two modes
 1. Blinded (You choose condition A or B without knowing which is which)
 2. Unblinded (You manually choose a real or sham experiment and which algorithm to use)
 
-![Blinded_NINFA](https://github.com/user-attachments/assets/c6763768-57e5-4933-8843-53c227bce00b)
+| Blinded NINFA | Unblinded NINFA |
+| --- | --- |
+| ![Blinded_NINFA](https://github.com/user-attachments/assets/c6763768-57e5-4933-8843-53c227bce00b) | ![Unblinded_NINFA](https://github.com/user-attachments/assets/4d067e46-8068-48cd-a4b8-d9730f5bae03) |
 
-![Unblinded_NINFA](https://github.com/user-attachments/assets/4d067e46-8068-48cd-a4b8-d9730f5bae03)
+*Left → A Blinded NINFA, Right → Unblinded NINFA*
 
-Left → A Blinded NINFA, Right → Unblinded NINFA
 
 Automatically, it starts in a blinded mode where the experimenter only has to choose condition A or B. You shouldn’t be able to select protocol and role in a blinded version, as you can in the unblinded version.
 
