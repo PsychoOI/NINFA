@@ -1,3 +1,7 @@
 *.m~
 *.asv
 sessions/
+*.png
+*.jpg
+.DS_Store
+liblsl-Matlab/*
