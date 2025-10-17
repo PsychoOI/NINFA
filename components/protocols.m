@@ -75,7 +75,8 @@ classdef protocols < handle
         
         function r = select(self, name)
             for p = 1:length(self.list)
-                if self.list(p).name == name
+                % exact match
+                if strcmp(char(self.list(p).name), char(name))
                     self.selected = self.list(p);
                     self.SSselected = self.list(p);
                     r = true;

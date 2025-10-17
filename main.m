@@ -84,7 +84,7 @@ function onSessionStarted(src, ~)
     global myprotocols;
     mylsl.marker = 0;
     mylsl.trigger(100);
-    myfeedback.showBar();
+    myfeedback.setMode("hidden");
     myprotocols.selected.fh.init();
 end
 
@@ -95,7 +95,7 @@ function onSessionStopped(src, ~)
     mylsl.marker = 0;
     mylsl.trigger(101);
     myfeedback.setBackground(src.bgcolor);
-    myfeedback.hideBar();
+    myfeedback.setMode("hidden");
     myprotocols.selected.fh.finish(src);
 end
 
@@ -104,25 +104,26 @@ function onSessionEpoch(src, ~)
     global myfeedback;
     mylsl.marker = src.marker;
     myfeedback.setBackground(src.bgcolor);
-    if src.fbvisible
-        myfeedback.showBar();
+
+    % decide visualization mode
+    
+    isVisible = isprop(src, 'fbvisible') && logical(src.fbvisible);
+    isTransfer = isprop(src, 'transfer') && logical(src.transfer);
+
+    if ~isVisible
+        myfeedback.setMode("hidden");
+    elseif isTransfer
+        % Show thermometer frame only (no moving bars)
+        myfeedback.setMode("neutral");
     else
-        myfeedback.hideBar();
+        % Normal neurofeedback (moving bars)
+        myfeedback.setMode("live");
     end
 end
 
 function onSessionWindow(src, ~)
     global myfeedback;
     global myprotocols;
-    global myselectchannels;
-
-    % print when NF/SS selections change
-    nf = myselectchannels.selected;     % long channels (indices)
-    ss = myselectchannels.SSselected;   % short channels (indices)
-
-    fprintf('NF idx: [%s]\n', strjoin(string(nf), ', '));
-    fprintf('SS idx: [%s]\n', strjoin(string(ss), ', '));
-
 
     prevNormFb  = 0.5;
     if src.idx > 1
