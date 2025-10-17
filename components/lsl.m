@@ -23,6 +23,7 @@ classdef lsl < handle
         outtrigger  lsl_outlet;               % outlet for trigger
         outmarker   lsl_outlet;               % outlet for marker
         marker      double    = 0.0;          % current epoch marker
+        N           (1,1) uint32 = 0          % number of channels per block inferred from LSL
     end
     
     events
@@ -71,23 +72,24 @@ classdef lsl < handle
             % Check if protocol requires SS channels
             req = myprotocols.selected.fh.requires();
             if isfield(req, 'SSchannels')
-                % Validate SS channels
                 if isempty(SSchannels)
-                    error("Short Channels can't be empty");
+                    % Allow "no SS" at runtime (e.g., sham where shorts drive NF)
+                    self.SSchannels = [];
+                    self.SSsample   = zeros(1, 0);
+                else
+                    % Validate SS channels when provided
+                    if any(SSchannels <= 0) || any(SSchannels > self.lslchannels)
+                        error("Requested invalid short channel(s) " + mat2str(SSchannels) + ...
+                              " of " + self.lslchannels);
+                    end
+                    self.SSchannels = SSchannels;
+                    nSS = numel(SSchannels);
+                    self.SSsample = zeros(1, nSS);
                 end
-                if any(SSchannels <= 0) || any(SSchannels > self.lslchannels)
-                    error("Requested invalid short channel(s) " + mat2str(SSchannels) + ...
-                          " of " + self.lslchannels);
-                end
-                
-                % Apply SS selection
-                self.SSchannels = SSchannels;
-                nSS = numel(SSchannels);
-                self.SSsample = zeros(1, nSS);
             else
-                % No SS channels required by protocol
+                % Protocol does not require SS → none
                 self.SSchannels = [];
-                self.SSsample = zeros(1, 0);
+                self.SSsample   = zeros(1, 0);
             end
         end
         
@@ -96,6 +98,20 @@ classdef lsl < handle
             if ~isempty(self.streams)
                 self.stream       = self.streams{1};
                 self.lslchannels  = self.stream.channel_count();
+                % Infer N from LSL stream (ignoring COUNTER if present)
+                if mod(self.lslchannels, 4) == 1
+                    % has COUNTER
+                    self.N = uint32((self.lslchannels - 1) / 4);
+                elseif mod(self.lslchannels, 4) == 0
+                    % no COUNTER
+                    self.N = uint32(self.lslchannels / 4);
+                else
+                    % inconsistent
+                    error('lsl:BadChannelCount', ...
+                          'LSL stream has %d channels, which cannot be split evenly into 4 blocks (+optional COUNTER).', ...
+                          self.lslchannels);
+                end
+
                 self.sratenom     = self.stream.nominal_srate();
                 self.inlet        = lsl_inlet(self.stream);
                 self.outtrigger   = lsl_outlet( ...
@@ -180,7 +196,7 @@ classdef lsl < handle
         
                 % Fire event & push marker
                 notify(self, 'NewSample');
-                if isvalid(self.outmarker) && ~isempty(self.outmarker)
+                if ~isempty(self.outmarker) && isvalid(self.outmarker)
                     self.outmarker.push_sample(self.marker);
                 end
         
@@ -198,7 +214,7 @@ classdef lsl < handle
 
         
         function r = trigger(self, value)
-            if isvalid(self.outtrigger) && ~isempty(self.outtrigger) && value ~= 0
+            if ~isempty(self.outtrigger) && isvalid(self.outtrigger) && value ~= 0
                 self.outtrigger.push_sample(value);
                 r = true;
             else

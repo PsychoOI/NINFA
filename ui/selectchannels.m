@@ -104,12 +104,12 @@ classdef selectchannels < handle
             end
             % build the list of *absolute* LSL indices that pass your filter
             global mydevices
-            
             allCh = mydevices.selected.lsl.channels;
-            vis   = uint32([]);
+        
+            vis = uint32([]);
             for idx = 1:numel(allCh)
                 if self.isChannelVisible(allCh(idx))
-                    vis(end+1) = idx;
+                    vis(end+1) = idx; %#ok<AGROW>
                 end
             end
             self.visibleIdx = vis;
@@ -118,27 +118,39 @@ classdef selectchannels < handle
             nVis = numel(vis);
             rows = cell(nVis,6);
             for r = 1:nVis
-                absIdx = vis(r);
+                absIdx = vis(r);          % absolute index in full LSL list
                 ch     = allCh(absIdx);
                 nf     = ismember(absIdx, self.selected_);
                 ss     = ismember(absIdx, self.SSselected_);
                 rows(r,:) = {
-                    logical(nf), ...   % NF checkbox
-                    r, ... % the row number
-                    ch.devch,   ...   % DEV CH
+                    logical(nf), ...       % NF checkbox
+                    absIdx,       ...      % LSL CH = absolute LSL index (FIXED)
+                    ch.devch,     ...      % DEV CH (device numbering)
                     char(ch.type), ...
                     char(ch.unit), ...
-                    logical(ss)      % SS checkbox
+                    logical(ss)            % SS checkbox
                 };
             end
         
             self.hChannels.Data = rows;
+        
+            % regression guard: UI LSL column must equal visibleIdx
+            try
+                shown = cell2mat(self.hChannels.Data(:,2));
+                if ~isequal(double(self.visibleIdx(:)), double(shown(:)))
+                    warning('LSL CH column mismatch: UI not showing absolute LSL indices.');
+                end
+            catch
+                % ignore if table is mid-build
+            end
+        
             % refresh the panel title
             self.hChannelsPanel.Title = sprintf('NF: %d  |  SS: %d', ...
                 numel(self.selected_), numel(self.SSselected_));
             % and re‐validate everything
             self.updateOK();
         end
+
 
         %% Try JSON‐based preselection (no effect if UI is closed)
         function preselectFromDeviceJSON(self)
@@ -153,12 +165,17 @@ classdef selectchannels < handle
                isnumeric(map.short_channels) && isempty(map.short_channels)
                 return;
             end
-
+        
             try
-                % Validate map, then pull long/short indices from device
+                % Validate the JSON against device channels
                 self.validateChannelMap(map, dev.lsl.channels);
-                self.selected   = mydevices.getLongChannelIndices();
-                self.SSselected = mydevices.getShortChannelIndices();
+        
+                % Convert JSON device IDs (HbO/HbR) to absolute LSL indices
+                [longIdx, shortIdx] = self.devjson_to_lsl_indices(map, dev.lsl.channels);
+        
+                % Store as absolute indices (what the UI and logic use)
+                self.selected   = longIdx;
+                self.SSselected = shortIdx;
             catch ME
                 userMsg    = strrep(ME.message, newline, ' ');
                 dialogTitle = 'Channel Map Error';
@@ -271,10 +288,12 @@ classdef selectchannels < handle
     methods (Access = private)
         %% Return true if that channel’s type/unit shows up in REQUIRED table
         function r = isChannelVisible(self, ch)
-            if isempty(self.hRequired.Data)
-                r = true;
+            % If REQUIRED table not ready, fallback to HbO/HbR-only selector
+            if isempty(self.hRequired) || ~isvalid(self.hRequired) || isempty(self.hRequired.Data)
+                r = strcmp(ch.type,'HbO') || strcmp(ch.type,'HbR');
                 return;
             end
+            % Otherwise, use REQUIRED-type filtering
             D = self.hRequired.Data;
             for i = 1:size(D,1)
                 if strcmp(D{i,4}, ch.type) && strcmp(D{i,5}, ch.unit)
@@ -284,6 +303,7 @@ classdef selectchannels < handle
             end
             r = false;
         end
+
 
         %% Flatten struct or flat vector into a column of IDs
         function ids = collectIDs(~, x)
@@ -431,7 +451,7 @@ classdef selectchannels < handle
             sel    = intersect(self.selected_,   1:numel(lslchs));
             ss     = intersect(self.SSselected_, 1:numel(lslchs));
     
-            % ——— 1) Update SEL_NF (col 3) ———
+            % Update SEL_NF (col 3)
             self.isok = true;
             for i = 1:numel(reqs)
                 r = reqs(i);
@@ -451,7 +471,7 @@ classdef selectchannels < handle
                 end
             end
     
-            % ——— 2) Update SEL_SS (col 8) ———
+            % Update SEL_SS (col 8)
             self.SSisok = true;
             rootReq = myprotocols.selected.fh.requires();  % the top‐level struct
             if isfield(rootReq,'SSchannels')
@@ -474,14 +494,14 @@ classdef selectchannels < handle
                 end
             end
     
-            % ——— 3) Enable/disable OK button ———
+            % Enable/disable OK button
             uiok = self.validateUISelection();
             if ~isempty(self.hButton) && isvalid(self.hButton)
                 self.hButton.Enable = matlab.lang.OnOffSwitchState( ...
                     self.isok && self.SSisok && uiok );
             end
     
-            % ——— 4) Refresh bottom‐panel title (“NF: x  |  SS: y”) ———
+            % Refresh bottom‐panel title (“NF: x  |  SS: y”)
             if isvalid(self.hChannelsPanel)
                 self.hChannelsPanel.Title = sprintf('NF: %d  |  SS: %d', ...
                     numel(sel), numel(ss));
@@ -516,22 +536,289 @@ classdef selectchannels < handle
             notify(self, 'Done');
             self.close();
         end
-    end
 
-    methods (Access = public)
-        %% Deselect a list of channels (removes from both lists, then refresh UI)
-        function deselectChannels(self, badList)
-            if isempty(badList)
+        function [longLSL, shortLSL] = devjson_to_lsl_indices(self, map, allCh)
+            % Convert JSON dev channel lists (per type) into absolute LSL indices.
+            % Only HbO/HbR are considered (UI design).
+            longLSL  = uint32([]);
+            shortLSL = uint32([]);
+        
+            % Ensure allCh is a flat struct array
+            if iscell(allCh), allCh = vertcat(allCh{:}); end
+        
+            % Local helper to add matches from a map branch into a target vector
+            function addFromBranch(branch, which) % which = 'long' or 'short'
+                if ~isstruct(branch), return; end
+                for wantedType = ["HbO","HbR"]
+                    t = char(wantedType);
+                    if ~isfield(branch, t), continue; end
+                    devIDs = branch.(t);
+                    if isempty(devIDs), continue; end
+                    for d = devIDs(:)'
+                        idx = find(arrayfun(@(c) strcmp(c.type,t) && c.devch==d, allCh), 1, 'first');
+                        if ~isempty(idx)
+                            if strcmp(which,'long')
+                                longLSL(end+1) = uint32(idx); %#ok<AGROW>
+                            else
+                                shortLSL(end+1) = uint32(idx); %#ok<AGROW>
+                            end
+                        else
+                            warning('No LSL channel found for (%s, devch=%d).', t, d);
+                        end
+                    end
+                end
+            end
+        
+            addFromBranch(map.long_channels,  'long');
+            addFromBranch(map.short_channels, 'short');
+        
+            % Keep order stable and remove duplicates just in case
+            longLSL  = unique(longLSL,  'stable');
+            shortLSL = unique(shortLSL, 'stable');
+        end
+        % Per-type simulator helper: maps devch->LSL (tolerant) and counts predicted removals
+        function H = simulateType_(self, devchs, typeStr)
+            H = struct( ...
+                'type',            string(typeStr), ...
+                'requested_devch', uint32(devchs(:).'), ...
+                'found_devch',     uint32([]), ...
+                'not_found_devch', uint32([]), ...
+                'found_lsl',       uint32([]), ...
+                'nf_remove',       uint32([]), ...
+                'ss_remove',       uint32([]), ...
+                'nf_remove_count', uint32(0), ...
+                'ss_remove_count', uint32(0));
+    
+            if isempty(devchs)
                 return;
             end
+    
+            % Map devch -> LSL, but do NOT error if a devch doesn't exist; mark as "not found"
+            found_lsl = uint32([]);
+            found_dev = uint32([]);
+            notfound  = uint32([]);
+            for d = devchs(:).'
+                try
+                    idx = self.devch_to_lsl(d, typeStr);
+                    found_lsl(end+1) = idx; %#ok<AGROW>
+                    found_dev(end+1) = d;   %#ok<AGROW>
+                catch
+                    notfound(end+1) = d;    %#ok<AGROW>
+                end
+            end
+    
+            H.found_devch     = unique(found_dev, 'stable');
+            H.not_found_devch = unique(notfound,  'stable');
+            H.found_lsl       = unique(found_lsl, 'stable');
+    
+            % Predict removals by intersecting with current selections
+            nf_to_remove = intersect(self.selected_,   H.found_lsl, 'stable');
+            ss_to_remove = intersect(self.SSselected_, H.found_lsl, 'stable');
+    
+            H.nf_remove       = nf_to_remove;
+            H.ss_remove       = ss_to_remove;
+            H.nf_remove_count = uint32(numel(nf_to_remove));
+            H.ss_remove_count = uint32(numel(ss_to_remove));
+        end
 
-            badList = unique(uint32(badList(:)));
-            self.selected_   = setdiff(self.selected_,   badList, 'stable');
-            self.SSselected_ = setdiff(self.SSselected_, badList, 'stable');
+        function [nNF, nSS] = getSelectionCounts_(self)
+            nNF = uint32(numel(self.selected_));
+            nSS = uint32(numel(self.SSselected_));
+        end
+
+        function s = joinIntList_(~, v)
+            if isempty(v), s = ""; return; end
+            s = strjoin(string(v(:).'), ',');
+        end
+
+
+
+        %% Deselect a list of channels (removes from both lists, then refresh UI)
+        function deselectChannels(self, devchs, type)
+            % Input checks
+            if nargin < 3
+                error('selectchannels:BadInput', ...
+                    'deselectChannels(devchs, type) requires device channel(s) and a type (e.g., "HbO").');
+            end
+            if isempty(devchs)
+                return;
+            end
+            if ~isvector(devchs) || ~isnumeric(devchs) || any(devchs ~= floor(devchs))
+                error('selectchannels:BadInput','"devchs" must be an integer scalar or vector.');
+            end
+            T = string(type);
+            if ~isscalar(T) || strlength(T)==0
+                error('selectchannels:BadInput','"type" must be a nonempty scalar string/char (e.g., "HbO" or "HbR").');
+            end
+
+            % Normalize and map devch -> absolute LSL indices
+            devchs = unique(double(devchs(:)'));              % dedupe, row
+            badLSL = self.devch_to_lsl(devchs, T);
+
+            % Remove from both selections (order preserved)
+            self.selected_   = setdiff(self.selected_,   badLSL, 'stable');
+            self.SSselected_ = setdiff(self.SSselected_, badLSL, 'stable');
 
             if ~isempty(self.hFig) && isvalid(self.hFig)
                 self.initSelected();
                 self.updateOK();
+            end
+        end
+    end
+
+    methods (Access = public)
+        %% Map device channel(s) + type -> absolute LSL index/indices
+        %  Usage:
+        %     idx = obj.devch_to_lsl(5, 'HbO');           % scalar -> scalar
+        %     idx = obj.devch_to_lsl([5 6 10], 'HbO');    % vector -> vector
+        %  Returns:
+        %     idx : uint32 row indices into mydevices.selected.lsl.channels
+        %           (the same numbers shown in the "LSL CH" column).
+        function idx = devch_to_lsl(self, devch, type)
+            % Input checks
+            if nargin < 3
+                error('selectchannels:BadInput', ...
+                      'devch_to_lsl(devch, type) needs devch and type.');
+            end
+            if ~isvector(devch) || ~isnumeric(devch) || any(devch ~= floor(devch))
+                error('selectchannels:BadInput','"devch" must be an integer scalar or vector.');
+            end
+            T = string(type);
+            if ~isscalar(T) || strlength(T) == 0
+                error('selectchannels:BadInput','"type" must be a nonempty scalar string/char (e.g., "HbO").');
+            end
+        
+            % Get current device channels
+            global mydevices;
+            allCh = mydevices.selected.lsl.channels;
+            if iscell(allCh), allCh = vertcat(allCh{:}); end
+            if isempty(allCh)
+                error('selectchannels:NoChannels','No LSL channels for current device.');
+            end
+        
+            % Prepare arrays for matching
+            types  = string({allCh.type});
+            devchs = double([allCh.devch]);
+        
+            % sanity: requested TYPE exists?
+            if ~any(types == T)
+                avail = unique(types);
+                error('selectchannels:UnknownType', ...
+                      'Type "%s" not found. Available types: %s', T, strjoin(cellstr(avail), ', '));
+            end
+        
+            % Resolve each devch
+            devch = double(devch(:)');        % row vector
+            out   = NaN(1, numel(devch));
+            for k = 1:numel(devch)
+                d    = devch(k);
+                hit  = find((types == T) & (devchs == d), 1, 'first');
+                if isempty(hit)
+                    error('selectchannels:NoMatchingLSL', ...
+                          'No LSL channel for (type="%s", devch=%d).', T, d);
+                end
+                out(k) = hit;                 % deterministic
+            end
+        
+            idx = uint32(out);
+        end
+
+        %% Parse a user string of devch numbers (tolerant; no ranges)
+        %  Usage:
+        %    P = obj.parseDevchInput(" 3, 7 , 12, ");
+        %  Returns struct:
+        %    P.devchs  : uint32 row vector of unique device channels (e.g., [3 7 12])
+        %    P.ignored : string array of tokens that were not purely digits (e.g., ["a","?"])
+        function P = parseDevchInput(~, raw)
+            if nargin < 2 || isempty(raw)
+                P = struct('devchs', uint32([]), 'ignored', string([]));
+                return;
+            end
+            s = string(raw);
+    
+            % Normalize separators to commas, then split
+            s = replace(s, [";", " "], ",");
+            % Also collapse multiple commas
+            while contains(s, ",,")
+                s = replace(s, ",,", ",");
+            end
+    
+            tokens = split(s, ",");
+            tokens = strtrim(tokens);
+            tokens = tokens(tokens ~= "");            % drop empties
+    
+            % Keep only pure digits; collect ignored
+            isNumTok = arrayfun(@(t) ~isempty(regexp(t, '^\d+$', 'once')), tokens);
+            goodTok  = tokens(isNumTok);
+            badTok   = tokens(~isNumTok);
+    
+            vals = uint32(str2double(goodTok));
+            vals = unique(vals, 'stable');           % dedupe, preserve order
+    
+            P = struct('devchs', vals(:).', 'ignored', badTok(:).');
+        end
+        %% Simulate a deselection (no state change) for preview
+        %  Inputs: two devch lists (can be empty). "Both" should be expanded in UI before calling.
+        %  Returns struct S with per-type preview and totals.
+        function S = simulateDeselect(self, devchsHbO, devchsHbR)
+            if nargin < 2, devchsHbO = []; end
+            if nargin < 3, devchsHbR = []; end
+    
+            % Per-type results
+            S.hbo = self.simulateType_(uint32(devchsHbO), "HbO");
+            S.hbr = self.simulateType_(uint32(devchsHbR), "HbR");
+    
+            % Totals
+            S.totals.nf_remove = S.hbo.nf_remove_count + S.hbr.nf_remove_count;
+            S.totals.ss_remove = S.hbo.ss_remove_count + S.hbr.ss_remove_count;
+            S.totals.found_devch     = [S.hbo.found_devch,     S.hbr.found_devch];
+            S.totals.not_found_devch = [S.hbo.not_found_devch, S.hbr.not_found_devch];
+    
+            % Ready-to-show summary
+            S.summary = sprintf( ...
+                "HbO: -NF %d, -SS %d; HbR: -NF %d, -SS %d; Totals: -NF %d, -SS %d", ...
+                S.hbo.nf_remove_count, S.hbo.ss_remove_count, ...
+                S.hbr.nf_remove_count, S.hbr.ss_remove_count, ...
+                S.totals.nf_remove,    S.totals.ss_remove);
+        end
+
+        %% Apply a deselection (commit) and return a brief result summary
+        %  Inputs: two devch lists (can be empty). "Both" should be expanded in UI before calling.
+        %  Returns R with before/after counts and a message.
+        function R = applyDeselect(self, devchsHbO, devchsHbR)
+            if nargin < 2, devchsHbO = []; end
+            if nargin < 3, devchsHbR = []; end
+    
+            % Counts before
+            [nfBefore, ssBefore] = self.getSelectionCounts_();
+    
+            % Apply (reuse your devch-based API; call per type if nonempty)
+            if ~isempty(devchsHbO)
+                self.deselectChannels(uint32(devchsHbO), 'HbO');
+            end
+            if ~isempty(devchsHbR)
+                self.deselectChannels(uint32(devchsHbR), 'HbR');
+            end
+    
+            % Counts after
+            [nfAfter, ssAfter] = self.getSelectionCounts_();
+    
+            R = struct();
+            R.nf_before = nfBefore;
+            R.nf_after  = nfAfter;
+            R.ss_before = ssBefore;
+            R.ss_after  = ssAfter;
+    
+            % Short message for UI
+            msgParts = string([]);
+            if ~isempty(devchsHbO), msgParts(end+1) = "HbO(" + self.joinIntList_(devchsHbO) + ")"; end 
+            if ~isempty(devchsHbR), msgParts(end+1) = "HbR(" + self.joinIntList_(devchsHbR) + ")"; end 
+    
+            if isempty(msgParts)
+                R.message = sprintf("No channels specified. NF %d→%d, SS %d→%d.", nfBefore, nfAfter, ssBefore, ssAfter);
+            else
+                R.message = sprintf("Removed %s. NF %d→%d, SS %d→%d.", ...
+                    strjoin(cellstr(msgParts), '; '), nfBefore, nfAfter, ssBefore, ssAfter);
             end
         end
     end

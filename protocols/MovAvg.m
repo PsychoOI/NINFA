@@ -51,8 +51,8 @@ function [rawFeedback, normFeedback] = process(...
 
     % CONSTANTS
     EXPECTED_AMPLITUDE =  0.1;
-    EXPECTED_MIN_DIFF  = -0.4;
-    EXPECTED_MAX_DIFF  =  0.4;
+    EXPECTED_MIN_DIFF  = -0.3;
+    EXPECTED_MAX_DIFF  =  0.3;
     
     normFeedback = 0.5;
     rawFeedback = 0.0;
