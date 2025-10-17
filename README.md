@@ -1,5 +1,3 @@
-# README.m
-
 # **NINFA: Non-commercial interface for neuro-feedback acquisitions**
 
 NINFA is a MATLAB framework for running custom neurofeedback protocols via Lab Streaming Layer (LSL) streams. Its flexible and reusable software design enables real-time data acquisition across brain regions and neuroimaging techniques. While initially developed for fNIRS, it is also compatible with EEG and other modalities.
@@ -209,7 +207,7 @@ An epoch is a configurable timespan within a session.
 
 Shows a centered bar with feedback values `<= 0.5` visualized in blue and values `> 0.5` visualized in red.
 
-[ukt-nf-feedback](https://github.com/cyberjunk/ukt-nf/assets/780159/05b6cb15-8979-4106-8c4d-77c790c9f4a8)
+![ukt-nf-feedback](https://github.com/cyberjunk/ukt-nf/assets/780159/05b6cb15-8979-4106-8c4d-77c790c9f4a8)
 
 ## Created by:
 
