@@ -13,24 +13,55 @@ classdef protocols < handle
     
     methods
         function reload(self, device)
-            self.list = [];
-            self.selected = struct();
+            self.list       = [];
+            self.selected   = struct();
             self.SSselected = struct();
-            files = ls("protocols/*.m");
-            for f = 1:size(files, 1)
-                file = files(f, 1:end);
-                name = strtrim(erase(file, ".m"));
-                fh = feval(name);
-                req = fh.requires();
-                if ~self.iscompatible(req, device)
+        
+            % If 'protocols' is a regular folder, ensure it's on the path:
+            if exist('+protocols','dir') == 0
+                addpath('protocols');
+            end
+        
+            d = dir(fullfile('protocols','*.m'));
+            for k = 1:numel(d)
+                [~, base] = fileparts(d(k).name);   % e.g. 'BandPass'
+        
+                % If protocols is a package folder (+protocols), use package-qualifed name:
+                if exist('+protocols','dir')
+                    fqname = ['protocols.' base];
+                else
+                    fqname = base;
+                end
+        
+                % Safeguard: skip if it's not callable
+                if ~(exist(fqname,'file') || exist(fqname,'class'))
                     continue
                 end
-                idx = length(self.list) + 1;
-                self.list(idx).name = name;
-                self.list(idx).fh = fh;
-                self.list(idx).req = req;
+        
+                % Call the protocol factory/constructor
+                try
+                    fh  = feval(fqname);
+                catch err
+                    warning('Skipping %s: %s', fqname, err.message);
+                    continue
+                end
+        
+                % Requirements & compatibility
+                if ~isfield(fh,'requires') && ~ismethod(fh,'requires')
+                    warning('Skipping %s: missing requires()', fqname);
+                    continue
+                end
+        
+                req = fh.requires();
+                if ~self.iscompatible(req, device), continue; end
+        
+                idx = numel(self.list) + 1;
+                self.list(idx).name = base;
+                self.list(idx).fh   = fh;
+                self.list(idx).req  = req;
             end
         end
+
         
         function r = iscompatible(~, req, dev)
             % check device type
