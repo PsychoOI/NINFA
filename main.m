@@ -97,6 +97,9 @@ function onSessionStopped(src, ~)
     myfeedback.setBackground(src.bgcolor);
     myfeedback.setMode("hidden");
     myprotocols.selected.fh.finish(src);
+
+    % A centralized save with the correct name & directory
+    save_session_plot(src);
 end
 
 function onSessionEpoch(src, ~)
