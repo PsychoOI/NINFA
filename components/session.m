@@ -338,21 +338,32 @@ classdef session < handle
         
         %% Save session to disk
         function save(self)
+            % how many samples actually recorded
             used = max(self.idx, 1);
-            
+
+            % build export filename based on the study parameters
             export.study      = self.study;
             export.subject    = self.subject;
             export.run        = self.run;
-            export.device     = self.device;
-            export.protocol   = self.protocol;
+
             export.samplerate = self.srate;
-            export.channels   = self.channels;
-            export.SSchannels = self.SSchannels;
+            export.channels   = self.channels; % NF channels actually used
+            export.SSchannels = self.SSchannels; % SS channels actually used
+
             export.starttime  = datetime(self.starttime,'ConvertFrom','datenum');
             export.stoptime   = datetime(self.stoptime,'ConvertFrom','datenum');
             export.duration   = self.length;
             export.windowsize = self.windowsize;
-            export.runType = cellstr(self.runType(1:used));
+
+            export.device     = self.device;
+            export.protocol   = self.protocol;
+            
+            % per-sample bookkeeping
+            export.times       = self.times(1:used);
+            export.runType = cellstr(self.runType(1:used)); % "transfer" | "neurofeedback"
+            export.rawFeedback  = self.rawFeedback(1:used);
+            export.normFeedback = self.normFeedback(1:used);
+            export.markers     = self.markers(1:used);
 
             % Blinded-condition metadata
             export.mode_label        = self.mode_label;        % "A"/"B"
@@ -382,24 +393,42 @@ classdef session < handle
                 export.SSwindow.(t) = self.SSwindow.(t)(1:min(self.windowidx,self.windowsize), :);
             end
             
-            export.times       = self.times(1:used);
             export.windowtimes = self.windowtimes(1:min(self.windowidx,self.windowsize));
-            export.rawFeedback  = self.rawFeedback(1:used);
-            export.normFeedback = self.normFeedback(1:used);
-            export.markers     = self.markers(1:used);
             
-            % Choose study name or default to "unnamed"
-            if self.study == ""
-                studyName = "unnamed";
-            else
-                studyName = self.study;
+            
+            % Study folder & safe names
+            studyName = self.study;
+            if studyName == "", studyName = "unnamed"; end
+        
+            % Safe folder/prefix (replace anything non [A-Za-z0-9._-] with '_')
+            safeStudy = regexprep(string(studyName), '[^A-Za-z0-9._-]', '_');
+        
+            baseDir = fullfile("sessions", safeStudy);
+            if ~exist(baseDir, 'dir'), mkdir(baseDir); end
+        
+            % Timestamp as YYYY-MM-DD_HH-MM-SS
+            ts = string(datetime(self.starttime, 'ConvertFrom', 'datenum', ...
+                                 'Format', 'yyyy-MM-dd_HH-mm-ss'));
+        
+            % Filename: <Study>_S###_R##_<ts>.mat
+            baseName = sprintf("%s_S%03d_R%02d_%s", safeStudy, self.subject, self.run, ts);
+            fpath    = fullfile(baseDir, baseName + ".mat");
+        
+            % A rare collision handling: add _v02, _v03, ...
+            if exist(fpath, 'file')
+                k = 2;
+                while true
+                    candidate = fullfile(baseDir, baseName + sprintf("_v%02d.mat", k));
+                    if ~exist(candidate, 'file')
+                        fpath = candidate;
+                        break;
+                    end
+                    k = k + 1;
+                end
             end
-            
-            % Build the filename and save
-            fname = sprintf("%s-%03d-%02d.mat", ...
-                studyName, ...
-                self.subject, self.run);
-            save(fullfile("sessions", fname), '-struct', 'export');
+        
+            % Save
+            save(fpath, '-struct', 'export');
         end
     end
 end
