@@ -216,3 +216,6 @@ Shows a centered bar with feedback values `<= 0.5` visualized in blue and values
 - Costanza Iester
 - Clint Banzhaf
 - Beatrix Barth
+
+## Citation:
+Iester C, Banzhaf C, Eldably A, Schopp B, Fallgatter AJ, Bonzano L, Bove M, Ehlis AC, Barth B. NINFA: Non-commercial interface for neuro-feedback acquisitions. Neurophotonics. 2025 Apr;12(2):026601. doi: 10.1117/1.NPh.12.2.026601. Epub 2025 May 14. PMID: 40370478; PMCID: PMC12077575.
